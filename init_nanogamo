@@ -1,0 +1,80 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:          quietspace
+# Required-Start:    $local_fs $remote_fs $network $syslog $named
+# Required-Stop:     $local_fs $remote_fs $network $syslog $named
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: A telnet adventure
+### END INIT INFO
+
+# mperron (2018)
+
+# All the server's files are a sub directory of this location by default.
+server_home="."
+
+# The server will run on this port.
+port="10421"
+
+# End server of configuration.
+
+
+
+# WARNING! WARNING! WARNING!
+# WARNING! WARNING! WARNING!
+# Refrain from editing anything below here if you are not a BASH expert.
+pushd $server_home >/dev/null
+export server_home=`pwd -P`
+popd >/dev/null
+
+# Directory for server binaries.
+bin_path="$server_home/bin"
+
+# Set the PATH so the server can find its utilities.
+export PATH="$PATH:$bin_path"
+exec_name="quietspace"
+
+# Set Library Path.
+export LD_LIBRARY_PATH="$server_home/lib;$LD_LIBRARY_PATH"
+
+pstart(){
+	echo "Starting Quiet Space server (httpd)..."
+	("$exec_name" "$port" >/tmp/quietspace_${port}_boot.log 2>&1) &
+	sleep 1
+}
+pstop(){
+	echo "Stopping server..."
+	pidfile=/tmp/quietspace_${port}.pid
+	pid=$(< $pidfile)
+
+	if [ -n "$pid" ]; then
+		kill "$pid"
+		rm -f "$pidfile"
+	else
+		echo "No PID file found."
+	fi
+}
+
+case "$1" in
+	start )
+		pstart
+	;;
+	stop )
+		pstop
+	;;
+	restart )
+		pstop
+		echo "Waiting..."
+		sleep 1
+		pstart
+	;;
+	status )
+		ps aux | grep ws | grep -v grep | grep -v "$0"
+		netstat -t | grep "$port"
+	;;
+	* )
+		echo "Usage: $0 <start|stop|restart|status>"
+	;;
+esac
+
+exit 0
