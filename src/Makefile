@@ -28,7 +28,7 @@ $(LIB)/libkraknet.so: $(C)/generic.c
 
 # quiet space
 $(BIN)/quietspace: $(C)/main.c $(O)/handler.o $(LIB)/libkraknet.so
-	$(CC) -Wall -o $(BIN)/quietspace $(C)/main.c $(O)/handler.o -lkraknet
+	$(CC) -Wall -o $(BIN)/quietspace $(C)/main.c $(O)/handler.o -lkraknet -lmysqlclient
 
 $(O)/handler.o: $(C)/handler.c $(I)/handler.h $(I)/generic.h
 	$(CC) -Wall -c $(C)/handler.c -o $(O)/handler.o

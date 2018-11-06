@@ -69,7 +69,7 @@ case "$1" in
 		pstart
 	;;
 	status )
-		ps aux | grep ws | grep -v grep | grep -v "$0"
+		ps aux | grep "$exec_name" | grep -v grep | grep -v "$0"
 		netstat -t | grep "$port"
 	;;
 	* )

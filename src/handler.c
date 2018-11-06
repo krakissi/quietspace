@@ -22,12 +22,12 @@ int handle_connection(FILE *request_stream, struct sockaddr_in socket_addr_clien
 
 		fprintf(
 			request_stream,
-			"Type \"exit\" to disconnect.\r\n"
-			"\r\n"
 			"Quiet Space\r\n"
 			"-----------\r\n"
+			"Type \"quit\" to disconnect.\r\n"
 			"\r\n"
-			"Warmth washes over you as your body exits cryostasis.\r\n"
+			"\r\n"
+			"Warmth washes over you.\r\n"
 		);
 
 		// Go interactive.
@@ -41,7 +41,7 @@ int handle_connection(FILE *request_stream, struct sockaddr_in socket_addr_clien
 				goto prompt;
 
 			// Exit immediately.
-			if(!strcmp(str, "exit"))
+			if(!strcmp(str, "quit") || !strcmp(str, "q"))
 				break;
 
 			// Command processing
