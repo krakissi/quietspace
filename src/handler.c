@@ -22,8 +22,18 @@ int handle_connection(FILE *request_stream, struct sockaddr_in socket_addr_clien
 
 		fprintf(
 			request_stream,
-			"Quiet Space\r\n"
-			"-----------\r\n"
+			/* "Elite" font */
+			"    .▄▄▄  ▄• ▄▌▪  ▄▄▄ .▄▄▄▄▄       \r\n"
+			"    ▐▀•▀█ █▪██▌██ ▀▄.▀·•██         \r\n"
+			"    █▌·.█▌█▌▐█▌▐█·▐▀▀▪▄ ▐█.▪       \r\n"
+			"    ▐█▪▄█·▐█▄█▌▐█▌▐█▄▄▌ ▐█▌·       \r\n"
+			"    ·▀▀█.  ▀▀▀ ▀▀▀ ▀▀▀  ▀▀▀        \r\n"
+			"        .▄▄ ·  ▄▄▄· ▄▄▄·  ▄▄· ▄▄▄ .\r\n"
+			"        ▐█ ▀. ▐█ ▄█▐█ ▀█ ▐█ ▌▪▀▄.▀·\r\n"
+			"        ▄▀▀▀█▄ ██▀·▄█▀▀█ ██ ▄▄▐▀▀▪▄\r\n"
+			"        ▐█▄▪▐█▐█▪·•▐█ ▪▐▌▐███▌▐█▄▄▌\r\n"
+			"         ▀▀▀▀ .▀    ▀  ▀ ·▀▀▀  ▀▀▀ \r\n"
+			"\r\n"
 			"Type \"quit\" to disconnect.\r\n"
 			"\r\n"
 			"\r\n"

@@ -16,6 +16,12 @@ CC=gcc -L$(LIB) -I$(I) -s -O3 -Wall
 
 all: $(O) $(BIN) $(LIB) $(LIB)/libkraknet.so $(BIN)/quietspace
 
+run: all
+	@cd .. && ./init_nanogamo restart
+
+stop:
+	@cd .. && ./init_nanogamo stop
+
 clean:
 	rm -f $(LIB)/kraknet.so $(O)/*.o $(BIN)/quietspace $(LIB)/libkraknet.so
 
