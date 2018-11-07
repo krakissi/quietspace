@@ -8,5 +8,6 @@
 #define QS_FMT_H
 
 extern void draw_borders(FILE*, int, int, int, int);
+extern int text_type(FILE*, const char*, ...);
 
 #endif

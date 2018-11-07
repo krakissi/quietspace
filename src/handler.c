@@ -8,6 +8,8 @@
 #include <netinet/in.h>
 #include <sys/wait.h>
 
+#include "defs.h"
+
 #include "generic.h"
 #include "qsfmt.h"
 
@@ -17,6 +19,7 @@ int handle_connection(FILE *request_stream, struct sockaddr_in socket_addr_clien
 	pid_t pid = 0;
 
 	if(!(pid = fork())){
+		char *ps = calloc(64, sizeof(char));
 		char *str = NULL;
 		size_t n;
 		ssize_t rd;
@@ -47,33 +50,50 @@ int handle_connection(FILE *request_stream, struct sockaddr_in socket_addr_clien
 		draw_borders(request_stream, 0, 1, 79, 18);
 
 		// Go interactive.
+		*ps = 0;
 		goto prompt;
 		while((rd = getline(&str, &n, request_stream)) != -1){
 			// Remove trailing return/feed characters.
 			sanitize_str(str);
 
 			// Exit immediately.
-			if(!strcmp(str, "quit") || !strcmp(str, "q"))
+			if(!strcmp(str, CMD_QUIT) || !strcmp(str, CMD_QUIT_ALT1))
 				break;
-
-			cmd_found = 0;
-
-			fputs("\033[18H\033[J", request_stream);
 
 			// Ignore empty command lines.
 			if(!*str)
 				goto prompt;
 
+			*ps = 0;
+			cmd_found = 0;
+			fputs("\033[18H\033[J", request_stream);
 
 			// Command processing
-			// TODO
+			if(!strcmp(str, CMD_JOIN)){
+				cmd_found = 1;
+
+				text_type(request_stream, "Choose a name. It may be no more than eight characters long and should consist only of letters ([A-Z][a-z]).");
+				strcpy(ps, "join");
+
+				// TODO - accept a password. Use color 8m to make text invisible.
+				strcpy(ps, "pass\033[8m");
+			} else if(!strcmp(str, CMD_LOGIN)){
+				cmd_found = 1;
+
+				text_type(request_stream, "Enter your username.");
+				strcpy(ps, CMD_LOGIN);
+			} else if(!strcmp(str, "demotext")){
+				cmd_found = 1;
+
+				text_type(request_stream, "This is an extremely long an uninteresting block of text, containing a multitude of sentences and words of varying lengths and complexities. This block is designed to test the rebustness of the text wrapping/typing function. Hopefully this all looks OK.");
+			}
 
 			// Unknown command text. FIXME
 			if(!cmd_found)
-				fprintf(request_stream, "... what?\r\n");
+				text_type(request_stream, "... what?\r\n");
 prompt:
 			// Print out the prompt and await a command.
-			fprintf(request_stream, "\033[23H\033[J> ");
+			fprintf(request_stream, "\033[23H\033[J%s> ", ps);
 		}
 
 		// Exit message.
@@ -83,6 +103,7 @@ prompt:
 		kws_fclose(&request_stream);
 
 		free(str);
+		free(ps);
 		exit(0);
 	}
 	if(pid > 0)
