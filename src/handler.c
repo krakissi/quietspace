@@ -73,7 +73,7 @@ int handle_connection(FILE *request_stream, struct sockaddr_in socket_addr_clien
 				fprintf(request_stream, "... what?\r\n");
 prompt:
 			// Print out the prompt and await a command.
-			fprintf(request_stream, "\033[24H\033[J> ");
+			fprintf(request_stream, "\033[23H\033[J> ");
 		}
 
 		// Exit message.
