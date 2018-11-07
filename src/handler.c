@@ -9,6 +9,7 @@
 #include <sys/wait.h>
 
 #include "generic.h"
+#include "qsfmt.h"
 
 #include "handler.h"
 
@@ -19,10 +20,13 @@ int handle_connection(FILE *request_stream, struct sockaddr_in socket_addr_clien
 		char *str = NULL;
 		size_t n;
 		ssize_t rd;
+		char cmd_found = 0;
 
 		fprintf(
 			request_stream,
 			/* "Elite" font */
+			"\033[2J\033c" /* Reset and clear display */
+			"\r\n\033[0;31m" /* RED */
 			"    .▄▄▄  ▄• ▄▌▪  ▄▄▄ .▄▄▄▄▄       \r\n"
 			"    ▐▀•▀█ █▪██▌██ ▀▄.▀·•██         \r\n"
 			"    █▌·.█▌█▌▐█▌▐█·▐▀▀▪▄ ▐█.▪       \r\n"
@@ -34,11 +38,12 @@ int handle_connection(FILE *request_stream, struct sockaddr_in socket_addr_clien
 			"        ▐█▄▪▐█▐█▪·•▐█ ▪▐▌▐███▌▐█▄▄▌\r\n"
 			"         ▀▀▀▀ .▀    ▀  ▀ ·▀▀▀  ▀▀▀ \r\n"
 			"\r\n"
-			"Type \"quit\" to disconnect.\r\n"
-			"\r\n"
-			"\r\n"
-			"Warmth washes over you.\r\n"
+			"  Type \"\033[1;31mjoin\033[0;31m\" to get started.\r\n"
+			"  Type \"\033[1;31mlogin\033[0;31m\" to resume.\r\n"
+			"  Type \"\033[1;31mquit\033[0;31m\" to disconnect.\r\n"
+			"\033[0m"
 		);
+		draw_borders(request_stream, 1, 1, 39, 12);
 
 		// Go interactive.
 		goto prompt;
@@ -54,17 +59,23 @@ int handle_connection(FILE *request_stream, struct sockaddr_in socket_addr_clien
 			if(!strcmp(str, "quit") || !strcmp(str, "q"))
 				break;
 
+			cmd_found = 0;
+
+			fputs("\033[18H\033[J", request_stream);
+
 			// Command processing
 			// TODO
 
 			// Unknown command text. FIXME
-			fprintf(request_stream, "... what?\r\n");
+			if(!cmd_found)
+				fprintf(request_stream, "... what?\r\n");
 prompt:
 			// Print out the prompt and await a command.
-			fprintf(request_stream, "\r\n> ");
+			fprintf(request_stream, "\033[24H\033[J> ");
 		}
 
-		fprintf(request_stream, "\r\nA rushing cold sensation overcomes you.\r\n");
+		// Exit message.
+		fprintf(request_stream, "\033c\033[H\033[JA rushing cold sensation overcomes you.\r\n\r\n");
 
 		// End of handler process.
 		kws_fclose(&request_stream);
