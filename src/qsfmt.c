@@ -11,20 +11,23 @@
 	sequences.
 */
 void draw_borders(FILE *stream, int row, int col, int w, int h){
-	fprintf(stream, "\033[%d;%dH", row, col);
 
-	fputs("╒", stream);
-	for(int i = 1; i < (w - 1); i++)
-		fputs("═", stream);
-	fputs("╕", stream);
+	if(row > 0){
+		fprintf(stream, "\033[%d;%dH╒", row, col);
+
+		for(int i = 1; i < (w - 1); i++)
+			fputs("═", stream);
+
+		fputs("╕", stream);
+	}
 
 	for(int i = 1; i < (h - 1); i++)
 		fprintf(stream, "\033[%d;%dH│\033[%dC│", (row + i), col, (w - 2));
 
-	fprintf(stream, "\033[%d;%dH", (row + h - 1), col);
+	fprintf(stream, "\033[%d;%dH╘", (row + h - 1), col);
 
-	fputs("╘", stream);
 	for(int i = 1; i < (w - 1); i++)
 		fputs("═", stream);
+
 	fputs("╛", stream);
 }

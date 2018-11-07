@@ -27,33 +27,30 @@ int handle_connection(FILE *request_stream, struct sockaddr_in socket_addr_clien
 			/* "Elite" font */
 			"\033[2J\033c" /* Reset and clear display */
 			"\r\n\033[0;31m" /* RED */
-			"    .▄▄▄  ▄• ▄▌▪  ▄▄▄ .▄▄▄▄▄       \r\n"
-			"    ▐▀•▀█ █▪██▌██ ▀▄.▀·•██         \r\n"
-			"    █▌·.█▌█▌▐█▌▐█·▐▀▀▪▄ ▐█.▪       \r\n"
-			"    ▐█▪▄█·▐█▄█▌▐█▌▐█▄▄▌ ▐█▌·       \r\n"
-			"    ·▀▀█.  ▀▀▀ ▀▀▀ ▀▀▀  ▀▀▀        \r\n"
-			"        .▄▄ ·  ▄▄▄· ▄▄▄·  ▄▄· ▄▄▄ .\r\n"
-			"        ▐█ ▀. ▐█ ▄█▐█ ▀█ ▐█ ▌▪▀▄.▀·\r\n"
-			"        ▄▀▀▀█▄ ██▀·▄█▀▀█ ██ ▄▄▐▀▀▪▄\r\n"
-			"        ▐█▄▪▐█▐█▪·•▐█ ▪▐▌▐███▌▐█▄▄▌\r\n"
-			"         ▀▀▀▀ .▀    ▀  ▀ ·▀▀▀  ▀▀▀ \r\n"
-			"\r\n"
+			"                        .▄▄▄  ▄• ▄▌▪  ▄▄▄ .▄▄▄▄▄       \r\n"
+			"                        ▐▀•▀█ █▪██▌██ ▀▄.▀·•██         \r\n"
+			"                        █▌·.█▌█▌▐█▌▐█·▐▀▀▪▄ ▐█.▪       \r\n"
+			"                        ▐█▪▄█·▐█▄█▌▐█▌▐█▄▄▌ ▐█▌·       \r\n"
+			"                        ·▀▀█.  ▀▀▀ ▀▀▀ ▀▀▀  ▀▀▀        \r\n"
+			"                            .▄▄ ·  ▄▄▄· ▄▄▄·  ▄▄· ▄▄▄ .\r\n"
+			"                            ▐█ ▀. ▐█ ▄█▐█ ▀█ ▐█ ▌▪▀▄.▀·\r\n"
+			"                            ▄▀▀▀█▄ ██▀·▄█▀▀█ ██ ▄▄▐▀▀▪▄\r\n"
+			"                            ▐█▄▪▐█▐█▪·•▐█ ▪▐▌▐███▌▐█▄▄▌\r\n"
+			"                             ▀▀▀▀ .▀    ▀  ▀ ·▀▀▀  ▀▀▀ \r\n"
+			"\r\n\r\n"
 			"  Type \"\033[1;31mjoin\033[0;31m\" to get started.\r\n"
 			"  Type \"\033[1;31mlogin\033[0;31m\" to resume.\r\n"
 			"  Type \"\033[1;31mquit\033[0;31m\" to disconnect.\r\n"
 			"\033[0m"
 		);
-		draw_borders(request_stream, 1, 1, 39, 12);
+		draw_borders(request_stream, 1, 21, 39, 12);
+		draw_borders(request_stream, 0, 1, 79, 18);
 
 		// Go interactive.
 		goto prompt;
 		while((rd = getline(&str, &n, request_stream)) != -1){
 			// Remove trailing return/feed characters.
 			sanitize_str(str);
-
-			// Ignore empty command lines.
-			if(!*str)
-				goto prompt;
 
 			// Exit immediately.
 			if(!strcmp(str, "quit") || !strcmp(str, "q"))
@@ -62,6 +59,11 @@ int handle_connection(FILE *request_stream, struct sockaddr_in socket_addr_clien
 			cmd_found = 0;
 
 			fputs("\033[18H\033[J", request_stream);
+
+			// Ignore empty command lines.
+			if(!*str)
+				goto prompt;
+
 
 			// Command processing
 			// TODO
