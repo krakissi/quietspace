@@ -38,6 +38,7 @@ int text_type(FILE *stream, const char *fmt, ...){
 	char *buffer = calloc(2048, sizeof(char)), *a, *b;
 	va_list va;
 	int i = 0, wrap_min = 72, wrap_max = 78;
+	const long sleep_regular = (5 * 1000 * 1000), sleep_medium = (100 * 1000 * 1000), sleep_long  = (250 * 1000 * 1000);
 
 	va_start(va, fmt);
 	int total = vsprintf(buffer, fmt, va);
@@ -45,7 +46,7 @@ int text_type(FILE *stream, const char *fmt, ...){
 
 	struct timespec t = {
 		0,
-		(7 * 1000 * 1000)
+		sleep_regular
 	};
 
 	for(a = buffer; *a; a++){
@@ -58,6 +59,15 @@ int text_type(FILE *stream, const char *fmt, ...){
 
 		fputc(*a, stream);
 		fflush(stream);
+
+		// Pause differently for punctuation.
+		if((*a == '.') || (*a == '!') || (*a == '?'))
+			t.tv_nsec = sleep_long;
+		else if(*a == ',')
+			t.tv_nsec = sleep_medium;
+		else
+			t.tv_nsec = sleep_regular;
+
 		nanosleep(&t, NULL);
 
 		if((++i >= wrap_min) && (*a != '\\') && (*(a - 1) != '\\')){

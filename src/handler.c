@@ -12,6 +12,7 @@
 
 #include "generic.h"
 #include "qsfmt.h"
+#include "dbpersistence.h"
 
 #include "handler.h"
 
@@ -40,10 +41,10 @@ int handle_connection(FILE *request_stream, struct sockaddr_in socket_addr_clien
 			"                            ▄▀▀▀█▄ ██▀·▄█▀▀█ ██ ▄▄▐▀▀▪▄\r\n"
 			"                            ▐█▄▪▐█▐█▪·•▐█ ▪▐▌▐███▌▐█▄▄▌\r\n"
 			"                             ▀▀▀▀ .▀    ▀  ▀ ·▀▀▀  ▀▀▀ \r\n"
-			"\r\n\r\n"
-			"  Type \"\033[1;31mjoin\033[0;31m\" to get started.\r\n"
-			"  Type \"\033[1;31mlogin\033[0;31m\" to resume.\r\n"
-			"  Type \"\033[1;31mquit\033[0;31m\" to disconnect.\r\n"
+			"\r\n\r\n\033[0m"
+			"  Type \033[1;31mjoin\033[0m to get started.\r\n"
+			"  Type \033[1;31mlogin\033[0m to resume.\r\n"
+			"  Type \033[1;31mquit\033[0m to disconnect.\r\n"
 			"\033[0m"
 		);
 		draw_borders(request_stream, 1, 21, 39, 12);
@@ -85,7 +86,7 @@ int handle_connection(FILE *request_stream, struct sockaddr_in socket_addr_clien
 			} else if(!strcmp(str, "demotext")){
 				cmd_found = 1;
 
-				text_type(request_stream, "This is an extremely long an uninteresting block of text, containing a multitude of sentences and words of varying lengths and complexities. This block is designed to test the rebustness of the text wrapping/typing function. Hopefully this all looks OK.");
+				text_type(request_stream, "This is an extremely long and uninteresting block of text, containing a multitude of sentences and words of varying lengths and complexities. This block is designed to test the rebustness of the text wrapping/typing function. Hopefully this all looks OK.");
 			}
 
 			// Unknown command text. FIXME
