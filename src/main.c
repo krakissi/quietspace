@@ -13,6 +13,7 @@
 
 #include <netinet/in.h>
 #include <sys/wait.h>
+#include <mysql/mysql.h>
 
 #include "generic.h"
 #include "handler.h"
@@ -55,6 +56,9 @@ int main(int argc, char**argv){
 
 	// Fork the process and start the server.
 	if(!(pid = fork())){
+		if(mysql_library_init(0, NULL, NULL))
+			return error_code(-10, "MySQL library init failed.");
+
 		// Acquire INET socket.
 		if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
 			return error_code(1, "Socket not got.");
@@ -113,6 +117,8 @@ int main(int argc, char**argv){
 			// Close handle to the child's socket in parent.
 			close(sockfd_client);
 		}
+
+		mysql_library_end();
 
 		// End of server process
 		exit(0);
