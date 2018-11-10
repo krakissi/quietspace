@@ -100,9 +100,6 @@ prompt:
 		// Exit message.
 		fprintf(request_stream, "\033c\033[H\033[JA rushing cold sensation overcomes you.\r\n\r\n");
 
-		// FIXME debug
-		db_dump_users(request_stream);
-
 		// End of handler process.
 		kws_fclose(&request_stream);
 
