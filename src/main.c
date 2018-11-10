@@ -38,6 +38,10 @@ void pid_write(int port, int pid){
 	}
 }
 
+void close_mysql_library(){
+	mysql_library_end();
+}
+
 int main(int argc, char**argv){
 	int sockfd, sockfd_client, client_length;
 	struct sockaddr_in socket_addr_client;
@@ -58,6 +62,8 @@ int main(int argc, char**argv){
 	if(!(pid = fork())){
 		if(mysql_library_init(0, NULL, NULL))
 			return error_code(-10, "MySQL library init failed.");
+
+		atexit(close_mysql_library);
 
 		// Acquire INET socket.
 		if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
@@ -117,8 +123,6 @@ int main(int argc, char**argv){
 			// Close handle to the child's socket in parent.
 			close(sockfd_client);
 		}
-
-		mysql_library_end();
 
 		// End of server process
 		exit(0);
