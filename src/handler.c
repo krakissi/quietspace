@@ -16,6 +16,26 @@
 
 #include "handler.h"
 
+ssize_t read_cmd(char **str_p, size_t *n_p, FILE *stream, const char *ps){
+	ssize_t rd;
+
+	// Print out the prompt and await a command.
+	fprintf(stream, "\033[23H\033[J%s> ", ps);
+
+	while((rd = getline(str_p, n_p, stream)) != -1){
+		// Remove trailing return/feed characters.
+		sanitize_str(*str_p);
+
+		// Ignore empty command lines.
+		if(!**str_p)
+			continue;
+
+		break;
+	}
+
+	return rd;
+}
+
 int handle_connection(FILE *request_stream, struct sockaddr_in socket_addr_client, int port){
 	pid_t pid = 0;
 
@@ -52,18 +72,10 @@ int handle_connection(FILE *request_stream, struct sockaddr_in socket_addr_clien
 
 		// Go interactive.
 		*ps = 0;
-		goto prompt;
-		while((rd = getline(&str, &n, request_stream)) != -1){
-			// Remove trailing return/feed characters.
-			sanitize_str(str);
-
+		while((rd = read_cmd(&str, &n, request_stream, ps)) != -1){
 			// Exit immediately.
 			if(!strcmp(str, CMD_QUIT) || !strcmp(str, CMD_QUIT_ALT1))
 				break;
-
-			// Ignore empty command lines.
-			if(!*str)
-				goto prompt;
 
 			*ps = 0;
 			cmd_found = 0;
@@ -92,9 +104,6 @@ int handle_connection(FILE *request_stream, struct sockaddr_in socket_addr_clien
 			// Unknown command text. FIXME
 			if(!cmd_found)
 				text_type(request_stream, "... what?\r\n");
-prompt:
-			// Print out the prompt and await a command.
-			fprintf(request_stream, "\033[23H\033[J%s> ", ps);
 		}
 
 		// Exit message.
