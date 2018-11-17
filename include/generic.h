@@ -23,4 +23,7 @@ extern void unquote_str(char *str);
 // Misc.
 extern int kws_fclose(FILE **stream);
 
+// Compute the SHA512 hash of a string. Allocates a buffer that should be freed.
+extern char *hash_compute(FILE *stream, char *pass);
+
 #endif

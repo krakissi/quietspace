@@ -39,7 +39,7 @@ $(BIN)/quietspace: $(C)/main.c $(O)/handler.o $(O)/qsfmt.o $(O)/dbpersistence.o 
 $(O)/dbpersistence.o: $(C)/dbpersistence.c $(C)/dbpersistence.h
 	$(CC) -c $(C)/dbpersistence.c -o $(O)/dbpersistence.o
 
-$(O)/handler.o: $(C)/handler.c $(I)/handler.h $(I)/generic.h $(C)/qsfmt.h $(C)/dbpersistence.h
+$(O)/handler.o: $(C)/handler.c $(I)/handler.h $(I)/generic.h $(C)/qsfmt.h $(C)/dbpersistence.h $(C)/qsgame.h
 	$(CC) -c $(C)/handler.c -o $(O)/handler.o
 
 $(O)/qsfmt.o: $(C)/qsfmt.c $(C)/qsfmt.h

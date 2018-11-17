@@ -9,7 +9,7 @@
 #define QS_DBPERSISTENCE_H
 
 #define QS_LEN_NAME 9
-#define QS_LEN_PASS 65
+#define QS_LEN_PASS 257
 
 typedef struct player {
 	unsigned long id_player;

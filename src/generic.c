@@ -85,3 +85,41 @@ int kws_fclose(FILE **stream){
 	*stream = NULL;
 	return f ? fclose(f) : 0;
 }
+
+char *hash_compute(FILE *stream, char *pass){
+	char *hash = NULL, cmd[1024], *a, *b;
+	size_t n;
+	FILE *p;
+
+	const char *cmd_pre = "echo '";
+	const char *cmd_post = "' | openssl sha512";
+
+	strcpy(cmd, cmd_pre);
+	for(a = pass, b = cmd + strlen(cmd_pre); *a; a++){
+		if(*a == '\''){
+			strcpy(b, "'\"'\"'");
+			b += 5;
+		} else
+			*(b++) = *a;
+	}
+	strcpy(b, cmd_post);
+
+	if(!(p = popen(cmd, "r")))
+		goto fail;
+
+	getline(&hash, &n, p);
+	sanitize_str(hash);
+
+	// Skip "(stdin)= " returned by openssl tool.
+	for(a = (hash + strlen("(stdin)= ")), b = hash; *a; a++)
+		*(b++) = *a;
+	*b = 0;
+
+	pclose(p);
+out:
+	return hash;
+fail:
+	free(hash);
+	hash = NULL;
+	goto out;
+}

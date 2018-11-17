@@ -1,3 +1,18 @@
+player *game_login(FILE *stream){
+	player *pl = NULL;
+
+	// Request player username
+	// TODO
+
+	// Request player password
+	// TODO
+
+	// Retrieve player and verify password.
+	// TODO
+
+	return pl;
+}
+
 player *game_join(FILE *stream){
 	player *pl = malloc(sizeof(player)), *pl_existing;
 
@@ -6,7 +21,7 @@ player *game_join(FILE *stream){
 	const char *prompt_pass = "Ok \033[0;31m%s\033[0m, what's your password?";
 	const char *ps_perm = "$";
 	char ps[16], ps_col[8];
-	char *str = NULL, *a = NULL;
+	char *str = NULL, *a = NULL, *hash = NULL;
 	size_t n;
 
 	// Rules defining valid names and passwords.
@@ -74,6 +89,14 @@ player *game_join(FILE *stream){
 		goto fail;
 	}
 
+	// Compute the hash of the player's password and store it instead.
+	if(!(hash = hash_compute(stream, pl->pass))){
+		cursor_position_response(stream);
+		text_type(stream, "An unknown error occurred.");
+		goto fail;
+	}
+	strcpy(pl->pass, hash);
+
 	// Create the player in the database. This should return a non-zero player ID.
 	if(!player_create(pl)){
 		cursor_position_response(stream);
@@ -86,8 +109,10 @@ player *game_join(FILE *stream){
 
 	cursor_position_response(stream);
 	text_type(stream, "Welcome to Quiet Space \033[0;31m%s\033[0m!", pl->nick);
+
 out:
 	free(a);
+	free(hash);
 	return pl;
 fail:
 	free(pl);
