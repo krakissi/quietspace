@@ -5,6 +5,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <ctype.h>
+#include <regex.h>
 
 #include <netinet/in.h>
 #include <sys/wait.h>
@@ -16,6 +17,10 @@
 #include "dbpersistence.h"
 
 #include "handler.h"
+
+void cursor_position_response(FILE *stream){
+	fputs("\033[18H\033[J\033[0m", stream);
+}
 
 ssize_t read_cmd(char **str_p, size_t *n_p, FILE *stream, const char *ps, const char *ps_perm, const char *ps_col){
 	ssize_t rd;
@@ -39,8 +44,102 @@ prompt:
 	return rd;
 }
 
-void cursor_position_response(FILE *stream){
-	fputs("\033[18H\033[J", stream);
+ssize_t read_cmd_bounded(
+	char **str_p, size_t *n_p, FILE *stream,
+	const char *ps, const char *ps_perm, const char *ps_col,
+	const char *msg_base, const char *msg_error,
+	const regex_t *expr
+){
+	ssize_t rd;
+
+	cursor_position_response(stream);
+	text_type(stream, msg_base);
+
+	if((rd = read_cmd(str_p, n_p, stream, ps, ps_perm, ps_col) == -1))
+		return rd;
+
+	if(expr)
+		while(regexec(expr, *str_p, 0, NULL, 0)){
+			cursor_position_response(stream);
+			text_type(stream, msg_error);
+
+			if((rd = read_cmd(str_p, n_p, stream, ps, ps_perm, ps_col) == -1))
+				break;
+		}
+
+	return rd;
+}
+
+player *game_join(FILE *stream){
+	player *pl = malloc(sizeof(player));
+
+	const char *prompt_choose = GAME_JOIN_CHOOSE GAME_JOIN_BASE;
+	const char *prompt_toolong = GAME_JOIN_TOOLONG GAME_JOIN_BASE;
+	const char *prompt_pass = "Ok \033[0;31m%s\033[0m, what's your password?";
+	const char *ps_perm = "$";
+	char ps[16], ps_col[16];
+	char *str = NULL, *a = NULL;
+	size_t n;
+
+	// Rules defining valid names and passwords.
+	regex_t regex_name, regex_pass;
+	regcomp(&regex_name, "^[A-Za-z]\\{2,8\\}$", 0);
+	regcomp(&regex_pass, "^.\\{4,64\\}$", 0);
+
+	*ps_col = 0;
+	strcpy(ps, "join");
+
+	if(read_cmd_bounded(
+		&str, &n, stream,
+		ps, ps_perm, ps_col,
+		prompt_choose, prompt_toolong,
+		&regex_name
+	) == -1)
+		goto fail;
+
+	strcpy(pl->nick, str);
+	for(a = str; *a; a++)
+		*a = tolower(*a);
+	strcpy(pl->name, str);
+
+	a = calloc(strlen(prompt_pass) + QS_LEN_NAME, sizeof(char));
+	sprintf(a, prompt_pass, pl->nick);
+	strcpy(ps_col, "\033[8m");
+	strcat(ps, "/pass");
+
+	if(read_cmd_bounded(
+		&str, &n, stream,
+		ps, ps_perm, ps_col,
+		a, "Your password should be at least five, but not more than 64 characters.",
+		&regex_pass
+	) == -1)
+		goto fail;
+
+	strcpy(pl->pass, str);
+
+	if(read_cmd_bounded(
+		&str, &n, stream,
+		ps, ps_perm, ps_col,
+		"Enter your password again to confirm.", NULL,
+		NULL
+	) == -1)
+		goto fail;
+
+	if(strcmp(pl->pass, str)){
+		cursor_position_response(stream);
+		text_type(stream, "Your password didn't match! Failed to create player.");
+		goto fail;
+	}
+
+	cursor_position_response(stream);
+	text_type(stream, "Welcome to Quiet Space \033[0;31m%s\033[0m!", pl->nick);
+out:
+	free(a);
+	return pl;
+fail:
+	free(pl);
+	pl = NULL;
+	goto out;
 }
 
 int handle_connection(FILE *request_stream, struct sockaddr_in socket_addr_client, int port){
@@ -50,12 +149,12 @@ int handle_connection(FILE *request_stream, struct sockaddr_in socket_addr_clien
 		char *ps = calloc(64, sizeof(char));
 		char *ps_perm = calloc(5, sizeof(char));
 		char *ps_col = calloc(16, sizeof(char));
-		char *str = NULL, *a;
+		char *str = NULL;
 		size_t n;
 		ssize_t rd;
 		char cmd_found = 0;
 
-		player pl;
+		player *pl = NULL;
 
 		fprintf(
 			request_stream,
@@ -98,54 +197,11 @@ int handle_connection(FILE *request_stream, struct sockaddr_in socket_addr_clien
 			if(!strcmp(str, CMD_JOIN)){
 				cmd_found = 1;
 
-				text_type(request_stream, "Choose a name. It may be no more than eight characters long and should consist only of letters ([A-Z][a-z]).");
-				strcpy(ps, "join");
+				// Prevent memory leak if join is called multiple times.
+				if(pl)
+					free(pl);
 
-				if((rd = read_cmd(&str, &n, request_stream, ps, ps_perm, ps_col) == -1))
-					break;
-
-				while(strlen(str) > (QS_LEN_NAME - 1)){
-					cursor_position_response(request_stream);
-					text_type(request_stream, "That name is too long.");
-
-					if((rd = read_cmd(&str, &n, request_stream, ps, ps_perm, ps_col) == -1))
-						break;
-				}
-				if(rd == -1)
-					break;
-
-				strcpy(pl.nick, str);
-				for(a = str; *a; a++)
-					*a = tolower(*a);
-				strcpy(pl.name, str);
-
-				cursor_position_response(request_stream);
-				text_type(request_stream, "Ok \033[0;31m%s\033[0m, what's your password?", pl.nick);
-
-				strcat(ps, "/pass");
-				strcat(ps_col, "\033[8m");
-
-				if((rd = read_cmd(&str, &n, request_stream, ps, ps_perm, ps_col) == -1))
-					break;
-
-				while(strlen(str) > (QS_LEN_PASS - 1)){
-					cursor_position_response(request_stream);
-					text_type(request_stream, "\033[0mThat password is too long.");
-
-					if((rd = read_cmd(&str, &n, request_stream, ps, ps_perm, ps_col) == -1))
-						break;
-				}
-				if(rd == -1)
-					break;
-
-				strcpy(pl.pass, str);
-
-				// Clear prompt and color.
-				*ps = *ps_col = 0;
-
-				// FIXME debug
-				cursor_position_response(request_stream);
-				debug_print_character(request_stream, &pl);
+				pl = game_join(request_stream);
 			} else if(!strcmp(str, CMD_LOGIN)){
 				cmd_found = 1;
 
@@ -170,6 +226,7 @@ int handle_connection(FILE *request_stream, struct sockaddr_in socket_addr_clien
 
 		free(str);
 		free(ps);
+		free(pl);
 		exit(0);
 	}
 	if(pid > 0)
