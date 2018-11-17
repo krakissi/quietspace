@@ -5,8 +5,10 @@
 #include <string.h>
 #include <stdarg.h>
 #include <time.h>
+#include <regex.h>
 
 #include "qsfmt.h"
+#include "generic.h"
 
 /*
 	Draw borders, probably for demonstration's sake, using ANSI escape
@@ -101,3 +103,56 @@ int text_type(FILE *stream, const char *fmt, ...){
 
 	return total;
 }
+
+void cursor_position_response(FILE *stream){
+	fputs("\033[18H\033[J\033[0m", stream);
+}
+
+ssize_t read_cmd(char **str_p, size_t *n_p, FILE *stream, const char *ps, const char *ps_perm, const char *ps_col){
+	ssize_t rd;
+
+	goto prompt;
+	while((rd = getline(str_p, n_p, stream)) != -1){
+		// Remove trailing return/feed characters.
+		sanitize_str(*str_p);
+
+		// Ignore empty command lines.
+		if(**str_p){
+			fputs("\033[0m", stream);
+			break;
+		}
+
+prompt:
+		// Print out the prompt and await a command.
+		fprintf(stream, "\033[23H\033[J\033[0m/%s %s%s ", ps, ps_perm, ps_col);
+	}
+
+	return rd;
+}
+
+ssize_t read_cmd_bounded(
+	char **str_p, size_t *n_p, FILE *stream,
+	const char *ps, const char *ps_perm, const char *ps_col,
+	const char *msg_base, const char *msg_error,
+	const regex_t *expr
+){
+	ssize_t rd;
+
+	cursor_position_response(stream);
+	text_type(stream, msg_base);
+
+	if((rd = read_cmd(str_p, n_p, stream, ps, ps_perm, ps_col) == -1))
+		return rd;
+
+	if(expr)
+		while(regexec(expr, *str_p, 0, NULL, 0)){
+			cursor_position_response(stream);
+			text_type(stream, msg_error);
+
+			if((rd = read_cmd(str_p, n_p, stream, ps, ps_perm, ps_col) == -1))
+				break;
+		}
+
+	return rd;
+}
+

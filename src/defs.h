@@ -10,6 +10,10 @@
 #define CMD_LOGIN "login"
 #define CMD_JOIN "join"
 
+// Regular expressions
+#define REG_NAME "^[A-Za-z]\\{1,8\\}$"
+#define REG_PASS "^.\\{4,64\\}$"
+
 // Message strings
 
 #define GAME_JOIN_CHOOSE "Choose a name."

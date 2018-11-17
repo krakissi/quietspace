@@ -29,6 +29,6 @@ extern void debug_print_character(FILE *stream, player *pl);
 // Player persistence
 extern unsigned long player_create(player *pl);
 extern void player_persist(player *pl);
-extern player *player_load(unsigned long id_player, char name[9], player *pl);
+extern player *player_load(unsigned long id_player, const char name[9], player *pl);
 
 #endif

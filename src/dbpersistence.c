@@ -117,7 +117,7 @@ out:
 }
 
 // Load a player, either by name or id_player (if id_player > 0). If pl is NULL this allocates memory.
-player *player_load(unsigned long id_player, char name[9], player *pl){
+player *player_load(unsigned long id_player, const char name[9], player *pl){
 	char *query = NULL;
 	MYSQL *mysql = get_conn();
 	if(!mysql)
