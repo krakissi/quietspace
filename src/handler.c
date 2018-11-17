@@ -83,8 +83,10 @@ int handle_connection(FILE *request_stream, struct sockaddr_in socket_addr_clien
 			} else if(!strcmp(str, CMD_LOGIN)){
 				cmd_found = 1;
 
-				text_type(request_stream, "Enter your username.");
-				strcpy(ps, CMD_LOGIN);
+				if(pl)
+					free(pl);
+
+				pl = game_login(request_stream);
 			} else if(!strcmp(str, "demotext")){
 				cmd_found = 1;
 

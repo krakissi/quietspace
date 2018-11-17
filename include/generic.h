@@ -19,6 +19,7 @@ extern int error_code(int code, const char *msg, ...);
 extern char **chop_words(const char *src);
 extern void sanitize_str(char *str);
 extern void unquote_str(char *str);
+extern void lower_str(char *str);
 
 // Misc.
 extern int kws_fclose(FILE **stream);

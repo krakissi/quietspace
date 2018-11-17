@@ -1,16 +1,72 @@
 player *game_login(FILE *stream){
 	player *pl = NULL;
 
+	const char *ps_perm = "$";
+	char ps[16], ps_col[8];
+	char *str = NULL, *hash = NULL;
+	size_t n;
+
+	char name[QS_LEN_NAME], pass[QS_LEN_PASS];
+
+	regex_t regex_name, regex_pass;
+	regcomp(&regex_name, REG_NAME, 0);
+	regcomp(&regex_pass, REG_PASS, 0);
+
+	*ps_col = 0;
+	strcpy(ps, "login");
+
 	// Request player username
-	// TODO
+	if(read_cmd_bounded(
+		&str, &n, stream,
+		ps, ps_perm, ps_col,
+		GAME_LOGIN_BASE, GAME_LOGIN_NAMEFAIL GAME_LOGIN_BASE,
+		&regex_name
+	) == -1)
+		goto fail;
+
+	// Name's are always lowercase in the database.
+	strcpy(name, str);
+	lower_str(name);
 
 	// Request player password
-	// TODO
+	strcpy(ps_col, "\033[8;30m");
+	strcat(ps, "/pass");
+	if(read_cmd_bounded(
+		&str, &n, stream,
+		ps, ps_perm, ps_col,
+		"Enter your password.", GAME_PASS_SIZEMSG,
+		&regex_pass
+	) == -1)
+		goto fail;
 
-	// Retrieve player and verify password.
-	// TODO
+	// Compute the hash of the provided password.
+	if(!(hash = hash_compute(stream, str)))
+		goto fail;
+	strcpy(pass, hash);
 
+	// Retrieve player.
+	pl = player_load(0, name, NULL);
+	if(pl == NULL)
+		goto fail;
+
+	// Compare password hashes.
+	if(strcmp(pass, pl->pass))
+		goto fail;
+
+	cursor_position_response(stream);
+	text_type(stream, "Authentication successful. Welcome \033[0;31m%s\033[0m!", pl->nick);
+
+out:
+	free(str);
+	free(hash);
 	return pl;
+fail:
+	cursor_position_response(stream);
+	text_type(stream, "Failed to authenticate. You may be using the wrong name or password.");
+
+	free(pl);
+	pl = NULL;
+	goto out;
 }
 
 player *game_join(FILE *stream){
@@ -42,10 +98,8 @@ player *game_join(FILE *stream){
 		goto fail;
 
 	strcpy(pl->nick, str);
-	for(a = str; *a; a++)
-		*a = tolower(*a);
 	strcpy(pl->name, str);
-	a = NULL;
+	lower_str(pl->name);
 
 	// Verify that the player's name isn't already in use.
 	pl_existing = player_load(0, pl->name, NULL);
@@ -57,16 +111,17 @@ player *game_join(FILE *stream){
 		goto fail;
 	}
 
+	// Prepare the password prompt with the user's nickname.
 	a = calloc(strlen(prompt_pass) + QS_LEN_NAME, sizeof(char));
 	sprintf(a, prompt_pass, pl->nick);
-	strcpy(ps_col, "\033[8m");
-	strcat(ps, "/pass");
 
 	// Ask the player to enter their password.
+	strcpy(ps_col, "\033[8;30m");
+	strcat(ps, "/pass");
 	if(read_cmd_bounded(
 		&str, &n, stream,
 		ps, ps_perm, ps_col,
-		a, "Your password should be at least five, but not more than 64 characters.",
+		a, GAME_PASS_SIZEMSG,
 		&regex_pass
 	) == -1)
 		goto fail;

@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 #include "generic.h"
 
@@ -77,6 +78,13 @@ void unquote_str(char *str){
 
 	if(str[--l] == '\"')
 		str[l] = 0;
+}
+
+void lower_str(char *str){
+	while(*str){
+		*str = tolower(*str);
+		str++;
+	}
 }
 
 int kws_fclose(FILE **stream){
