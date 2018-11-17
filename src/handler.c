@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <ctype.h>
 
 #include <netinet/in.h>
 #include <sys/wait.h>
@@ -16,24 +17,30 @@
 
 #include "handler.h"
 
-ssize_t read_cmd(char **str_p, size_t *n_p, FILE *stream, const char *ps){
+ssize_t read_cmd(char **str_p, size_t *n_p, FILE *stream, const char *ps, const char *ps_perm, const char *ps_col){
 	ssize_t rd;
 
-	// Print out the prompt and await a command.
-	fprintf(stream, "\033[23H\033[J%s> ", ps);
-
+	goto prompt;
 	while((rd = getline(str_p, n_p, stream)) != -1){
 		// Remove trailing return/feed characters.
 		sanitize_str(*str_p);
 
 		// Ignore empty command lines.
-		if(!**str_p)
-			continue;
+		if(**str_p){
+			fputs("\033[0m", stream);
+			break;
+		}
 
-		break;
+prompt:
+		// Print out the prompt and await a command.
+		fprintf(stream, "\033[23H\033[J\033[0m/%s %s%s ", ps, ps_perm, ps_col);
 	}
 
 	return rd;
+}
+
+void cursor_position_response(FILE *stream){
+	fputs("\033[18H\033[J", stream);
 }
 
 int handle_connection(FILE *request_stream, struct sockaddr_in socket_addr_client, int port){
@@ -41,10 +48,14 @@ int handle_connection(FILE *request_stream, struct sockaddr_in socket_addr_clien
 
 	if(!(pid = fork())){
 		char *ps = calloc(64, sizeof(char));
-		char *str = NULL;
+		char *ps_perm = calloc(5, sizeof(char));
+		char *ps_col = calloc(16, sizeof(char));
+		char *str = NULL, *a;
 		size_t n;
 		ssize_t rd;
 		char cmd_found = 0;
+
+		player pl;
 
 		fprintf(
 			request_stream,
@@ -71,15 +82,17 @@ int handle_connection(FILE *request_stream, struct sockaddr_in socket_addr_clien
 		draw_borders(request_stream, 0, 1, 79, 18);
 
 		// Go interactive.
-		*ps = 0;
-		while((rd = read_cmd(&str, &n, request_stream, ps)) != -1){
+		*ps = *ps_perm = *ps_col = 0;
+		strcat(ps_perm, "$");
+
+		while((rd = read_cmd(&str, &n, request_stream, ps, ps_perm, ps_col)) != -1){
 			// Exit immediately.
 			if(!strcmp(str, CMD_QUIT) || !strcmp(str, CMD_QUIT_ALT1))
 				break;
 
 			*ps = 0;
 			cmd_found = 0;
-			fputs("\033[18H\033[J", request_stream);
+			cursor_position_response(request_stream);
 
 			// Command processing
 			if(!strcmp(str, CMD_JOIN)){
@@ -88,8 +101,51 @@ int handle_connection(FILE *request_stream, struct sockaddr_in socket_addr_clien
 				text_type(request_stream, "Choose a name. It may be no more than eight characters long and should consist only of letters ([A-Z][a-z]).");
 				strcpy(ps, "join");
 
-				// TODO - accept a password. Use color 8m to make text invisible.
-				strcpy(ps, "pass\033[8m");
+				if((rd = read_cmd(&str, &n, request_stream, ps, ps_perm, ps_col) == -1))
+					break;
+
+				while(strlen(str) > (QS_LEN_NAME - 1)){
+					cursor_position_response(request_stream);
+					text_type(request_stream, "That name is too long.");
+
+					if((rd = read_cmd(&str, &n, request_stream, ps, ps_perm, ps_col) == -1))
+						break;
+				}
+				if(rd == -1)
+					break;
+
+				strcpy(pl.nick, str);
+				for(a = str; *a; a++)
+					*a = tolower(*a);
+				strcpy(pl.name, str);
+
+				cursor_position_response(request_stream);
+				text_type(request_stream, "Ok \033[0;31m%s\033[0m, what's your password?", pl.nick);
+
+				strcat(ps, "/pass");
+				strcat(ps_col, "\033[8m");
+
+				if((rd = read_cmd(&str, &n, request_stream, ps, ps_perm, ps_col) == -1))
+					break;
+
+				while(strlen(str) > (QS_LEN_PASS - 1)){
+					cursor_position_response(request_stream);
+					text_type(request_stream, "\033[0mThat password is too long.");
+
+					if((rd = read_cmd(&str, &n, request_stream, ps, ps_perm, ps_col) == -1))
+						break;
+				}
+				if(rd == -1)
+					break;
+
+				strcpy(pl.pass, str);
+
+				// Clear prompt and color.
+				*ps = *ps_col = 0;
+
+				// FIXME debug
+				cursor_position_response(request_stream);
+				debug_print_character(request_stream, &pl);
 			} else if(!strcmp(str, CMD_LOGIN)){
 				cmd_found = 1;
 
