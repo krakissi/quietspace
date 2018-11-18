@@ -24,9 +24,6 @@ int handle_connection(FILE *request_stream, struct sockaddr_in socket_addr_clien
 	pid_t pid = 0;
 
 	if(!(pid = fork())){
-		char *ps = calloc(64, sizeof(char));
-		char *ps_perm = calloc(5, sizeof(char));
-		char *ps_col = calloc(16, sizeof(char));
 		char *str = NULL;
 		size_t n;
 		ssize_t rd;
@@ -59,20 +56,17 @@ int handle_connection(FILE *request_stream, struct sockaddr_in socket_addr_clien
 		draw_borders(request_stream, 0, 1, 79, 18);
 
 		// Go interactive.
-		*ps = *ps_perm = *ps_col = 0;
-		strcat(ps_perm, "$");
-
-		while((rd = read_cmd(&str, &n, request_stream, ps, ps_perm, ps_col)) != -1){
+		while((rd = read_cmd(&str, &n, request_stream, "", "$", "")) != -1){
 			// Exit immediately.
 			if(!strcmp(str, CMD_QUIT) || !strcmp(str, CMD_QUIT_ALT1))
 				break;
 
-			*ps = 0;
 			cmd_found = 0;
-			cursor_position_response(request_stream);
+			lower_str(str);
 
-			// Command processing
 			if(!strcmp(str, CMD_JOIN)){
+				// Create a character and start playing.
+
 				cmd_found = 1;
 
 				// Prevent memory leak if join is called multiple times.
@@ -81,21 +75,28 @@ int handle_connection(FILE *request_stream, struct sockaddr_in socket_addr_clien
 
 				pl = game_join(request_stream);
 			} else if(!strcmp(str, CMD_LOGIN)){
+				// Login with an existing account.
+
 				cmd_found = 1;
 
 				if(pl)
 					free(pl);
 
 				pl = game_login(request_stream);
-			} else if(!strcmp(str, "demotext")){
-				cmd_found = 1;
-
-				text_type(request_stream, "This is an extremely long and uninteresting block of text, containing a multitude of sentences and words of varying lengths and complexities. This block is designed to test the rebustness of the text wrapping/typing function. Hopefully this all looks OK.");
 			}
 
-			// Unknown command text. FIXME
-			if(!cmd_found)
-				text_type(request_stream, "... what?\r\n");
+			if(pl){
+				// Once the player is logged in (or newly created via join) we can start the game.
+				game_start(request_stream, pl);
+
+				// When the game_start function returns, it's time to quit.
+				break;
+			}
+
+			if(!cmd_found){
+				cursor_position_response(request_stream);
+				text_type(request_stream, "... what? Try \033[0;31mjoin\033[0m or \033[0;31mlogin\033[0m.\r\n");
+			}
 		}
 
 		// Exit message.
@@ -105,7 +106,6 @@ int handle_connection(FILE *request_stream, struct sockaddr_in socket_addr_clien
 		kws_fclose(&request_stream);
 
 		free(str);
-		free(ps);
 		free(pl);
 		exit(0);
 	}
