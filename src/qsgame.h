@@ -85,7 +85,13 @@ player *game_login(FILE *stream){
 		goto fail;
 
 	cursor_position_response(stream);
-	text_type(stream, "Authentication successful. Welcome \033[0;31m%s\033[0m!", pl->nick);
+	text_type(
+		stream,
+		"Authentication successful. Welcome back \033[0;31m%s\033[0m!\r\n"
+		"\r\n"
+		"..........",
+		pl->nick
+	);
 
 out:
 	free(str);
@@ -195,7 +201,13 @@ player *game_join(FILE *stream){
 	player_load(pl->id_player, NULL, pl);
 
 	cursor_position_response(stream);
-	text_type(stream, "Welcome to Quiet Space \033[0;31m%s\033[0m!", pl->nick);
+	text_type(
+		stream,
+		"Welcome to Quiet Space \033[0;31m%s\033[0m!\r\n"
+		"\r\n"
+		"..........",
+		pl->nick
+	);
 
 out:
 	free(a);
