@@ -46,7 +46,7 @@ void map_draw(FILE *stream, player *pl){
 			}
 
 			if(col_bg != col_bg_prev){
-				fprintf(stream, "\033[0;%dm", col_bg);
+				fprintf(stream, "\033[0;30;%dm", col_bg);
 				col_bg_prev = col_bg;
 			}
 
