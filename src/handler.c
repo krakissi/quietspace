@@ -15,6 +15,7 @@
 #include "generic.h"
 #include "qsfmt.h"
 #include "dbpersistence.h"
+#include "qsmap.h"
 
 #include "handler.h"
 
@@ -36,24 +37,24 @@ int handle_connection(FILE *request_stream, struct sockaddr_in socket_addr_clien
 			/* "Elite" font */
 			"\033[2J\033c" /* Reset and clear display */
 			"\r\n\033[0;31m" /* RED */
-			"                        .▄▄▄  ▄• ▄▌▪  ▄▄▄ .▄▄▄▄▄       \r\n"
-			"                        ▐▀•▀█ █▪██▌██ ▀▄.▀·•██         \r\n"
-			"                        █▌·.█▌█▌▐█▌▐█·▐▀▀▪▄ ▐█.▪       \r\n"
-			"                        ▐█▪▄█·▐█▄█▌▐█▌▐█▄▄▌ ▐█▌·       \r\n"
-			"                        ·▀▀█.  ▀▀▀ ▀▀▀ ▀▀▀  ▀▀▀        \r\n"
-			"                            .▄▄ ·  ▄▄▄· ▄▄▄·  ▄▄· ▄▄▄ .\r\n"
-			"                            ▐█ ▀. ▐█ ▄█▐█ ▀█ ▐█ ▌▪▀▄.▀·\r\n"
-			"                            ▄▀▀▀█▄ ██▀·▄█▀▀█ ██ ▄▄▐▀▀▪▄\r\n"
-			"                            ▐█▄▪▐█▐█▪·•▐█ ▪▐▌▐███▌▐█▄▄▌\r\n"
-			"                             ▀▀▀▀ .▀    ▀  ▀ ·▀▀▀  ▀▀▀ \r\n"
-			"\r\n\r\n\033[0m"
-			"  Type \033[1;31mjoin\033[0m to get started.\r\n"
-			"  Type \033[1;31mlogin\033[0m to resume.\r\n"
-			"  Type \033[1;31mquit\033[0m to disconnect.\r\n"
+			"                                            .▄▄▄  ▄• ▄▌▪  ▄▄▄ .▄▄▄▄▄       \r\n"
+			"                                            ▐▀•▀█ █▪██▌██ ▀▄.▀·•██         \r\n"
+			"                                            █▌·.█▌█▌▐█▌▐█·▐▀▀▪▄ ▐█.▪       \r\n"
+			"                                            ▐█▪▄█·▐█▄█▌▐█▌▐█▄▄▌ ▐█▌·       \r\n"
+			"                                            ·▀▀█.  ▀▀▀ ▀▀▀ ▀▀▀  ▀▀▀        \r\n"
+			"                                                .▄▄ ·  ▄▄▄· ▄▄▄·  ▄▄· ▄▄▄ .\r\n"
+			"                                                ▐█ ▀. ▐█ ▄█▐█ ▀█ ▐█ ▌▪▀▄.▀·\r\n"
+			"                                                ▄▀▀▀█▄ ██▀·▄█▀▀█ ██ ▄▄▐▀▀▪▄\r\n"
+			"                                                ▐█▄▪▐█▐█▪·•▐█ ▪▐▌▐███▌▐█▄▄▌\r\n"
+			"                                                 ▀▀▀▀ .▀    ▀  ▀ ·▀▀▀  ▀▀▀ \r\n"
+			"\033[10;1H\033[0m"
+			"   Type \033[1;31mjoin\033[0m to get started.\r\n"
+			"   Type \033[1;31mlogin\033[0m to resume.\r\n"
+			"   Type \033[1;31mquit\033[0m to disconnect.\r\n"
 			"\033[0m"
 		);
-		draw_borders(request_stream, 1, 21, 39, 12);
-		draw_borders(request_stream, 0, 1, 79, 18);
+		draw_borders(request_stream, 1, 41, 38, 12);
+		draw_borders(request_stream, 0, 1, 79, 15);
 
 		// Go interactive.
 		while((rd = read_cmd(&str, &n, request_stream, "", "$", "")) != -1){

@@ -33,17 +33,20 @@ $(LIB)/libkraknet.so: $(C)/generic.c
 
 
 # quiet space
-$(BIN)/quietspace: $(C)/main.c $(O)/handler.o $(O)/qsfmt.o $(O)/dbpersistence.o $(LIB)/libkraknet.so
-	$(CC) -o $(BIN)/quietspace $(C)/main.c $(O)/handler.o $(O)/qsfmt.o $(O)/dbpersistence.o -lkraknet -lmysqlclient
+$(BIN)/quietspace: $(C)/main.c $(O)/handler.o $(O)/qsfmt.o $(O)/dbpersistence.o $(O)/qsmap.o $(LIB)/libkraknet.so
+	$(CC) -o $(BIN)/quietspace $(C)/main.c $(O)/*.o -lkraknet -lmysqlclient
 
 $(O)/dbpersistence.o: $(C)/dbpersistence.c $(C)/dbpersistence.h
 	$(CC) -c $(C)/dbpersistence.c -o $(O)/dbpersistence.o
 
-$(O)/handler.o: $(C)/handler.c $(I)/handler.h $(I)/generic.h $(C)/qsfmt.h $(C)/dbpersistence.h $(C)/qsgame.h
+$(O)/handler.o: $(C)/handler.c $(I)/handler.h $(I)/generic.h $(C)/qsfmt.h $(C)/dbpersistence.h $(C)/qsgame.h $(C)/qsmap.h
 	$(CC) -c $(C)/handler.c -o $(O)/handler.o
 
 $(O)/qsfmt.o: $(C)/qsfmt.c $(C)/qsfmt.h
 	$(CC) -c $(C)/qsfmt.c -o $(O)/qsfmt.o
+
+$(O)/qsmap.o: $(C)/qsmap.c $(C)/qsmap.h
+	$(CC) -c $(C)/qsmap.c -o $(O)/qsmap.o
 
 # directories
 $(O):

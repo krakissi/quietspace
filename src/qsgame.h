@@ -3,7 +3,7 @@ void draw_base_borders(FILE *stream){
 		"\033[2J\033c" /* Reset and clear display */
 	);
 
-	draw_borders(stream, 0, 1, 79, 18);
+	draw_borders(stream, 0, 1, 79, 15);
 }
 
 // Entry point for the actual game, once a player is logged in.
@@ -13,9 +13,11 @@ void game_start(FILE *stream, player *pl){
 	size_t n;
 
 	draw_base_borders(stream);
+	map_draw(stream, pl);
 
 	while((rd = read_cmd(&str, &n, stream, "", "$", "")) != -1){
 		draw_base_borders(stream);
+		map_draw(stream, pl);
 
 		// Exit immediately.
 		if(!strcmp(str, CMD_QUIT) || !strcmp(str, CMD_QUIT_ALT1))

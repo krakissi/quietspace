@@ -105,7 +105,7 @@ int text_type(FILE *stream, const char *fmt, ...){
 }
 
 void cursor_position_response(FILE *stream){
-	fputs("\033[18H\033[J\033[0m", stream);
+	fputs("\033[16H\033[J\033[0m", stream);
 }
 
 ssize_t read_cmd(char **str_p, size_t *n_p, FILE *stream, const char *ps, const char *ps_perm, const char *ps_col){
