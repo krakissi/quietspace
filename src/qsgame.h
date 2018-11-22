@@ -1,9 +1,13 @@
-void draw_base_borders(FILE *stream){
+#include "scenes.h"
+
+void draw_scene(FILE *stream, const char *graphics){
 	fprintf(stream,
 		"\033[2J\033c" /* Reset and clear display */
 	);
 
-	draw_borders(stream, 0, 1, 79, 15);
+	fprintf(stream, "\033[0;0H%s", graphics);
+
+	draw_borders(stream, 0, 1, 80, 15);
 }
 
 // Entry point for the actual game, once a player is logged in.
@@ -12,12 +16,10 @@ void game_start(FILE *stream, player *pl){
 	ssize_t rd;
 	size_t n;
 
-	draw_base_borders(stream);
-	map_draw(stream, pl);
+	draw_scene(stream, lift_doors);
 
 	while((rd = read_cmd(&str, &n, stream, "", "$", "")) != -1){
-		draw_base_borders(stream);
-		map_draw(stream, pl);
+		draw_scene(stream, lift_doors);
 
 		// Exit immediately.
 		if(!strcmp(str, CMD_QUIT) || !strcmp(str, CMD_QUIT_ALT1))

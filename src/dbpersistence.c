@@ -11,12 +11,14 @@
 #define PLAYER_INSERT_SQL_START "INSERT INTO players(name,nick,pass) VALUES ("
 #define PLAYER_INSERT_SQL_END ")"
 
-#define PLAYER_REPLACE_SQL_START "REPLACE INTO players(name,nick,pass) VALUES ("
+#define PLAYER_REPLACE_SQL_START "REPLACE INTO players(name,nick,pass,pos_level,pos_id) VALUES ("
 #define PLAYER_REPLACE_SQL_END ")"
 
-#define PLAYER_SELECT_SQL_START "SELECT id_player, name, nick, created, pass FROM players WHERE "
+#define PLAYER_SELECT_SQL_START "SELECT id_player, name, nick, created, pass, pos_level, pos_id FROM players WHERE "
 #define PLAYER_SELECT_SQL_ID "id_player = "
 #define PLAYER_SELECT_SQL_NAME "name = "
+
+#define SQL_FUDGE 3
 
 // Get a database connection handle. Must be closed with mysql_close().
 MYSQL *get_conn(){
@@ -34,12 +36,18 @@ MYSQL *get_conn(){
 
 // Debug: Dumps out the player object to the specified stream for viewing.
 void debug_print_character(FILE *stream, player *pl){
-	fprintf(stream, "%2ld: %s (%s) created=%ld pass=%s\r\n",
+	fprintf(
+		stream,
+		"%2ld: %s (%s) created=%ld pass=%s\r\n"
+		"cell: %d%c - room: %s\r\n",
 		pl->id_player,
 		pl->name,
 		pl->nick,
 		pl->created,
-		pl->pass
+		pl->pass,
+		(pl->pos_level ^ QS_POS_AC_IND),
+		((pl->pos_level & QS_POS_AC_IND) ? 'C' : 'A'),
+		pl->pos_id
 	);
 }
 
@@ -55,9 +63,9 @@ unsigned long player_create(player *pl){
 	query = calloc(
 		(
 		 	strlen(PLAYER_INSERT_SQL_START) +
-			QS_LEN_NAME + 3 +
-			QS_LEN_NAME + 3 +
-			QS_LEN_PASS + 2 +
+			QS_LEN_NAME + SQL_FUDGE + // Name
+			QS_LEN_NAME + SQL_FUDGE + // Nick
+			QS_LEN_PASS + SQL_FUDGE + // Pass
 			strlen(PLAYER_INSERT_SQL_END)
 		),
 		sizeof(char)
@@ -93,19 +101,23 @@ void player_persist(player *pl){
 	query = calloc(
 		(
 			strlen(PLAYER_REPLACE_SQL_START) +
-			QS_LEN_NAME + 3 +
-			QS_LEN_NAME + 3 +
-			QS_LEN_PASS + 2 +
+			QS_LEN_NAME + SQL_FUDGE + // Name
+			QS_LEN_NAME + SQL_FUDGE + // Nick
+			QS_LEN_PASS + SQL_FUDGE + // Pass
+			5 + SQL_FUDGE + // pos_level
+			QS_LEN_POS_ID + SQL_FUDGE + // pos_id
 			strlen(PLAYER_REPLACE_SQL_END)
 		),
 		sizeof(char)
 	);
 	sprintf(
 		query,
-		PLAYER_REPLACE_SQL_START "'%s','%s','%s'" PLAYER_REPLACE_SQL_END,
+		PLAYER_REPLACE_SQL_START "'%s','%s','%s', %d, '%s'" PLAYER_REPLACE_SQL_END,
 		pl->name,
 		pl->nick,
-		pl->pass
+		pl->pass,
+		pl->pos_level,
+		pl->pos_id
 	);
 
 	// Persist and hope for the best.
@@ -127,7 +139,7 @@ player *player_load(unsigned long id_player, const char name[9], player *pl){
 	if(id_player)
 		len += strlen(PLAYER_SELECT_SQL_ID) + 20;
 	else
-		len += strlen(PLAYER_SELECT_SQL_NAME) + QS_LEN_NAME + 3;
+		len += strlen(PLAYER_SELECT_SQL_NAME) + QS_LEN_NAME + SQL_FUDGE;
 	query = calloc(len, sizeof(char));
 
 	if(id_player)
@@ -156,6 +168,9 @@ player *player_load(unsigned long id_player, const char name[9], player *pl){
 		pl->created = 0;
 
 		strcpy(pl->pass, row[4]);
+
+		pl->pos_level = atoi(row[5]);
+		strcpy(pl->pos_id, row[6]);
 
 		mysql_free_result(result);
 	}

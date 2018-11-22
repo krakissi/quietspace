@@ -54,7 +54,7 @@ int handle_connection(FILE *request_stream, struct sockaddr_in socket_addr_clien
 			"\033[0m"
 		);
 		draw_borders(request_stream, 1, 41, 38, 12);
-		draw_borders(request_stream, 0, 1, 79, 15);
+		draw_borders(request_stream, 0, 1, 80, 15);
 
 		// Go interactive.
 		while((rd = read_cmd(&str, &n, request_stream, "", "$", "")) != -1){
