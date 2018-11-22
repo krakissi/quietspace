@@ -16,16 +16,24 @@ void game_start(FILE *stream, player *pl){
 	ssize_t rd;
 	size_t n;
 
-	draw_scene(stream, lift_doors);
+	char *scene = scene_lift_doors;
+
+	draw_scene(stream, scene);
 
 	while((rd = read_cmd(&str, &n, stream, "", "$", "")) != -1){
-		draw_scene(stream, lift_doors);
-
 		// Exit immediately.
 		if(!strcmp(str, CMD_QUIT) || !strcmp(str, CMD_QUIT_ALT1))
 			break;
 
 		lower_str(str);
+
+		// FIXME debug
+		if(!strcmp(str, "lift"))
+			scene = scene_lift_doors;
+		else if(!strcmp(str, "desk"))
+			scene = scene_desk;
+
+		draw_scene(stream, scene);
 
 		cursor_position_response(stream);
 		text_type(stream, ": %s", str);
