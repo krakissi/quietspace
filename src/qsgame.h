@@ -10,6 +10,18 @@ void draw_scene(FILE *stream, const char *graphics){
 	draw_borders(stream, 0, 1, 80, 15);
 }
 
+void draw_overlay(FILE *stream, char *graphics){
+	fputs("\033[0;0H", stream);
+	while(*graphics){
+		if(*graphics == ' ')
+			fputs("\033[C", stream);
+		else
+			fputc(*graphics, stream);
+
+		graphics++;
+	}
+}
+
 // Entry point for the actual game, once a player is logged in.
 void game_start(FILE *stream, player *pl){
 	char *str = NULL;
@@ -17,6 +29,7 @@ void game_start(FILE *stream, player *pl){
 	size_t n;
 
 	char *scene = scene_lift_doors;
+	char *overlay = "";
 
 	draw_scene(stream, scene);
 
@@ -26,6 +39,7 @@ void game_start(FILE *stream, player *pl){
 			break;
 
 		lower_str(str);
+		overlay = "";
 
 		// FIXME debug
 		if(!strcmp(str, "lift"))
@@ -33,7 +47,11 @@ void game_start(FILE *stream, player *pl){
 		else if(!strcmp(str, "desk"))
 			scene = scene_desk;
 
+		if((scene == scene_desk) && !strcmp(str, "overlay"))
+			overlay = scene_desk_overlay;
+
 		draw_scene(stream, scene);
+		draw_overlay(stream, overlay);
 
 		cursor_position_response(stream);
 		text_type(stream, ": %s", str);
