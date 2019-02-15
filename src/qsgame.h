@@ -1,21 +1,20 @@
 #include "scenes.h"
-#include "base64.h"
-
 void draw_scene(FILE *stream, char *graphics){
+	char *gfx = load_graphics(graphics);
+
 	fprintf(stream,
 		"\033[2J\033c" /* Reset and clear display */
 	);
-
-	char *graphics_dec = base64_dec(graphics, strlen(graphics));
-
-	fprintf(stream, "\033[0;0H%s", graphics);
-
-	free(graphics_dec);
-
+	fprintf(stream, "\033[0;0H%s", gfx);
 	draw_borders(stream, 0, 1, 80, 15);
+
+	free(gfx);
 }
 
 void draw_overlay(FILE *stream, char *graphics){
+	char *gfx = load_graphics(graphics);
+	graphics = gfx;
+
 	fputs("\033[0;0H", stream);
 	while(*graphics){
 		if(*graphics == ' ')
@@ -25,6 +24,8 @@ void draw_overlay(FILE *stream, char *graphics){
 
 		graphics++;
 	}
+
+	free(gfx);
 }
 
 // Entry point for the actual game, once a player is logged in.

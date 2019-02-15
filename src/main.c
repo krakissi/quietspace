@@ -85,7 +85,6 @@ int main(int argc, char**argv){
 		if(listen(sockfd, 64) == -1)
 			return error_code(1, "Deaf.");
 
-
 		// Let init handle the children.
 		signal(SIGCHLD, SIG_IGN);
 
