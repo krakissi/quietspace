@@ -1,11 +1,16 @@
 #include "scenes.h"
+#include "base64.h"
 
-void draw_scene(FILE *stream, const char *graphics){
+void draw_scene(FILE *stream, char *graphics){
 	fprintf(stream,
 		"\033[2J\033c" /* Reset and clear display */
 	);
 
+	char *graphics_dec = base64_dec(graphics, strlen(graphics));
+
 	fprintf(stream, "\033[0;0H%s", graphics);
+
+	free(graphics_dec);
 
 	draw_borders(stream, 0, 1, 80, 15);
 }
