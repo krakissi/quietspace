@@ -13,10 +13,10 @@ char *data = (
 );
 
 int main(){
-	char *enc = base64_enc(data, strlen(data));
+	char *dec = base64_dec(data, strlen(data));
 
-	base64_toquoted(enc, stdout);
-	free(enc);
+	printf(dec);
+	free(dec);
 
 	return 0;
 }
