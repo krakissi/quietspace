@@ -13,6 +13,7 @@ O=o
 BIN=../bin
 LIB=../lib
 CC=gcc -L$(LIB) -I$(I) -s -O3 -Wall
+ASSETS=assets_enc
 
 all: $(O) $(BIN) $(LIB) $(LIB)/libkraknet.so $(BIN)/quietspace
 
@@ -39,7 +40,7 @@ $(BIN)/quietspace: $(C)/main.c $(O)/handler.o $(O)/qsfmt.o $(O)/dbpersistence.o 
 $(O)/dbpersistence.o: $(C)/dbpersistence.c $(C)/dbpersistence.h
 	$(CC) -c $(C)/dbpersistence.c -o $(O)/dbpersistence.o
 
-$(O)/handler.o: $(C)/handler.c $(I)/handler.h $(I)/generic.h $(C)/qsfmt.h $(C)/dbpersistence.h $(C)/qsgame.h $(C)/qsmap.h $(C)/scenes.h
+$(O)/handler.o: $(C)/handler.c $(I)/handler.h $(I)/generic.h $(C)/qsfmt.h $(C)/dbpersistence.h $(C)/qsgame.h $(C)/qsmap.h $(C)/scenes.h $(ASSETS)/*
 	$(CC) -c $(C)/handler.c -o $(O)/handler.o
 
 $(O)/qsfmt.o: $(C)/qsfmt.c $(C)/qsfmt.h
