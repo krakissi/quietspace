@@ -14,7 +14,7 @@ Set up database user in MySQL/MariaDB:
 	grant all privileges on quietspace.* to 'quietspace'@'localhost' identified by 'quietspace';
 ```
 
-Create tables the tables:
+Create the tables:
 
 ```
 	CREATE TABLE players (
