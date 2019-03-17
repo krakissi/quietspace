@@ -12,10 +12,11 @@ C=.
 O=o
 BIN=../bin
 LIB=../lib
+UTIL=../util
 CC=gcc -L$(LIB) -I$(I) -s -O3 -Wall
 ASSETS=assets_enc
 
-all: $(O) $(BIN) $(LIB) $(LIB)/libkraknet.so $(BIN)/quietspace
+all: $(O) $(BIN) $(LIB) $(LIB)/libkraknet.so $(BIN)/quietspace encoder
 
 run: all
 	@cd .. && ./init_nanogamo restart
@@ -24,13 +25,20 @@ stop:
 	@cd .. && ./init_nanogamo stop
 
 clean:
-	rm -f $(LIB)/kraknet.so $(O)/*.o $(BIN)/quietspace $(LIB)/libkraknet.so
+	rm -f $(LIB)/kraknet.so $(O)/*.o $(BIN)/quietspace $(LIB)/libkraknet.so $(UTIL)/encoder
+
+encoder: $(UTIL)/encoder
+	@echo "Base64 encoder OK."
 
 # libkraknet (shared library of common functions)
 $(LIB)/libkraknet.so: $(C)/generic.c
 	$(CC) -c -fPIC -o $(O)/generic.o $(C)/generic.c
 	$(CC) -shared -o $(LIB)/libkraknet.so $(O)/generic.o -lrt
 	chmod a-x $(LIB)/libkraknet.so
+
+# base64 asset encoding tool
+$(UTIL)/encoder: $(C)/encoder.c $(C)/base64.h
+	$(CC) -o $(UTIL)/encoder $(C)/encoder.c
 
 
 # quiet space

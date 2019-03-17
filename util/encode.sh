@@ -22,6 +22,7 @@ int main(){
 }
 EOF
 
+rm -f "$F.out"
 cc -o "$F.out" -I../src -I. "$F.c"
 
 "$F.out"
