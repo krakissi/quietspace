@@ -9,6 +9,7 @@
 */
 
 #include <stdlib.h>
+#include <string.h>
 
 static inline char byte_enc(char in){
 	char out = in + 32;
