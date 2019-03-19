@@ -1,20 +1,23 @@
-#include "scenes.h"
-void draw_scene(FILE *stream, char *graphics){
-	char *gfx = load_graphics(graphics);
+#include "loader.h"
+
+asset *asset_tree;
+
+void draw_scene(FILE *stream, asset *as, char *key){
+	asset_kv *kv = kv_tree_find(as->kv_tree, key);
 
 	fprintf(stream,
 		"\033[2J\033c" /* Reset and clear display */
 	);
-	fprintf(stream, "\033[0;0H%s", gfx);
-	draw_borders(stream, 0, 1, 80, 15);
 
-	free(gfx);
+	if(kv)
+		fprintf(stream, "\033[0;0H%s", kv->value.str);
+	else
+		fprintf(stream, "failed to find kv!!");
+
+	draw_borders(stream, 0, 1, 80, 15);
 }
 
 void draw_overlay(FILE *stream, char *graphics){
-	char *gfx = load_graphics(graphics);
-	graphics = gfx;
-
 	fputs("\033[0;0H", stream);
 	while(*graphics){
 		if(*graphics == ' ')
@@ -24,8 +27,6 @@ void draw_overlay(FILE *stream, char *graphics){
 
 		graphics++;
 	}
-
-	free(gfx);
 }
 
 // Entry point for the actual game, once a player is logged in.
@@ -34,10 +35,12 @@ void game_start(FILE *stream, player *pl){
 	ssize_t rd;
 	size_t n;
 
-	char *scene = scene_lift_doors;
-	char *overlay = "";
+	// Load all assets
+	asset_tree = asset_load();
 
-	draw_scene(stream, scene);
+	asset *scene = asset_tree_find(asset_tree, "lift_doors");
+
+	draw_scene(stream, scene, "scene_main");
 
 	while((rd = read_cmd(&str, &n, stream, "", "$", "")) != -1){
 		// Exit immediately.
@@ -45,19 +48,14 @@ void game_start(FILE *stream, player *pl){
 			break;
 
 		lower_str(str);
-		overlay = "";
 
 		// FIXME debug
 		if(!strcmp(str, "lift"))
-			scene = scene_lift_doors;
+			scene = asset_tree_find(asset_tree, "lift_doors");
 		else if(!strcmp(str, "desk"))
-			scene = scene_desk;
+			scene = asset_tree_find(asset_tree, "desk");
 
-		if((scene == scene_desk) && !strcmp(str, "overlay"))
-			overlay = scene_desk_overlay;
-
-		draw_scene(stream, scene);
-		draw_overlay(stream, overlay);
+		draw_scene(stream, scene, "scene_main");
 
 		cursor_position_response(stream);
 		text_type(stream, ": %s", str);

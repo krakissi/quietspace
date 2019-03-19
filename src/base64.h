@@ -7,6 +7,8 @@
 	This mechanism requires no lookup table, but produces non-standard base64
 	data.
 */
+#ifndef QS_BASE64_H
+#define QS_BASE64_H
 
 #include <stdlib.h>
 #include <string.h>
@@ -118,3 +120,5 @@ char *base64_dec(char *data, size_t len_in){
 
 	return data_dec;
 }
+
+#endif

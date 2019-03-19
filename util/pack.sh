@@ -1,9 +1,8 @@
 #!/bin/bash
 
-ENC=../src/assets_enc
-FROM=../assets/from
-
 working=$(dirname $0)
+ENC=$working/../src/assets_enc
+FROM=$working/../assets/from
 
 if ! [ -e "$working/encoder" ]; then
 	echo "Missing encoder! Run \"make encoder\" in the src directory."

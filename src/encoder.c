@@ -17,7 +17,7 @@
 int main(int argc, char **argv){
 	char buffer[READ_BLOCK_SIZE];
 	unsigned char *data = NULL;
-	size_t n = 0;
+	size_t n = 0, r;
 
 	if(argc < 2){
 		fprintf(stderr, "Usage:\n\t%s <file>\n", *argv);
@@ -31,8 +31,8 @@ int main(int argc, char **argv){
 		return 1;
 	}
 
-	while(fread(buffer, sizeof(char), READ_BLOCK_SIZE, source)){
-		n += READ_BLOCK_SIZE;
+	while((r = fread(buffer, sizeof(char), READ_BLOCK_SIZE, source))){
+		n += r;
 		data = realloc(data, n * sizeof(char));
 
 		if(!data){
@@ -40,8 +40,9 @@ int main(int argc, char **argv){
 			return 2;
 		}
 
-		memcpy(data + n - READ_BLOCK_SIZE, buffer, READ_BLOCK_SIZE);
+		memcpy(data + n - r, buffer, r);
 	}
+
 	fclose(source);
 
 	char *enc = base64_enc(data, n);
