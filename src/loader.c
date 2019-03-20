@@ -6,15 +6,8 @@
 
 #include "loader.h"
 
-/*
-	Decode the base64 graphics data and return a newly allocated buffer which must be freed.
-*/
-char *load_graphics(char *graphics){
-	return base64_dec(graphics, strlen(graphics));
-}
-
 char *assets[] = {
-	#include "assets_enc/scene_desk"
+	#include "assets_enc/scene_dorm"
 	,
 	#include "assets_enc/scene_lift_doors"
 	,
@@ -176,15 +169,13 @@ asset *asset_load(){
 
 	while(*b64){
 		asset_kv *kv_tree = malloc(sizeof(asset_kv));
-		char *gfx = load_graphics(*b64);
+		char *gfx = base64_dec(*b64, strlen(*b64));
 
 		FILE *source = fmemopen(gfx, strlen(gfx), "r");
 		regmatch_t match_kv[3];
 
-		if(!source){
-			fprintf(stderr, "Failed to open decoded data as a file.\n");
-			return NULL;
-		}
+		if(!source)
+			continue;
 
 		kv_tree->l = kv_tree->r = NULL;
 		kv_tree->key = NULL;
@@ -248,13 +239,12 @@ asset *asset_load(){
 		}
 
 		fclose(source);
+		free(gfx);
 		b64++;
 
 		kv = kv_tree_find(kv_tree, "name");
-		if(!kv){
-			printf("Failed to find name field for asset.");
+		if(!kv)
 			continue;
-		}
 
 		if(!as_tree->name){
 			as = as_tree;

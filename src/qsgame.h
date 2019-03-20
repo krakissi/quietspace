@@ -9,7 +9,7 @@ void draw_scene(FILE *stream, asset *as, char *key){
 		"\033[2J\033c" /* Reset and clear display */
 	);
 
-	if(kv)
+	if(kv && ((kv->type == AVT_SCENE) || (kv->type == AVT_SCENE_OVERLAY)))
 		fprintf(stream, "\033[0;0H%s", kv->value.str);
 	else
 		fprintf(stream, "failed to find kv!!");
@@ -17,15 +17,21 @@ void draw_scene(FILE *stream, asset *as, char *key){
 	draw_borders(stream, 0, 1, 80, 15);
 }
 
-void draw_overlay(FILE *stream, char *graphics){
-	fputs("\033[0;0H", stream);
-	while(*graphics){
-		if(*graphics == ' ')
-			fputs("\033[C", stream);
-		else
-			fputc(*graphics, stream);
+void draw_overlay(FILE *stream, asset *as, char *key){
+	asset_kv *kv = kv_tree_find(as->kv_tree, key);
 
-		graphics++;
+	if(kv && ((kv->type == AVT_SCENE_OVERLAY) || (kv->type == AVT_SCENE))){
+		char *graphics = kv->value.str;
+
+		fputs("\033[0;0H", stream);
+		while(*graphics){
+			if(*graphics == ' ')
+				fputs("\033[C", stream);
+			else
+				fputc(*graphics, stream);
+
+			graphics++;
+		}
 	}
 }
 
@@ -52,10 +58,15 @@ void game_start(FILE *stream, player *pl){
 		// FIXME debug
 		if(!strcmp(str, "lift"))
 			scene = asset_tree_find(asset_tree, "lift_doors");
-		else if(!strcmp(str, "desk"))
-			scene = asset_tree_find(asset_tree, "desk");
+		else if(!strcmp(str, "dorm"))
+			scene = asset_tree_find(asset_tree, "dorm");
 
 		draw_scene(stream, scene, "scene_main");
+
+		if(!strcmp(str, "overlay")){
+			if(!strcmp(scene->name, "dorm"))
+				draw_overlay(stream, scene, "scene_main_overlay");
+		}
 
 		cursor_position_response(stream);
 		text_type(stream, ": %s", str);

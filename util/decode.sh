@@ -1,5 +1,6 @@
 #!/bin/bash
 
+working=$(dirname "$0")
 F=/tmp/ring_10421
 
 cat > "$F.c"  << EOF
@@ -22,6 +23,6 @@ int main(){
 }
 EOF
 
-cc -o "$F.out" -I../src -I. "$F.c"
+cc -o "$F.out" "-I$working/../src" -I. "$F.c"
 
 "$F.out"

@@ -27,45 +27,58 @@ stop:
 clean:
 	rm -f $(LIB)/kraknet.so $(O)/*.o $(BIN)/quietspace $(LIB)/libkraknet.so $(UTIL)/encoder
 
-encoder: $(UTIL)/encoder
-	@echo "Base64 encoder OK."
+encoder: $(BIN)/encoder
+	@
 
 # libkraknet (shared library of common functions)
 $(LIB)/libkraknet.so: $(C)/generic.c
-	$(CC) -c -fPIC -o $(O)/generic.o $(C)/generic.c
-	$(CC) -shared -o $(LIB)/libkraknet.so $(O)/generic.o -lrt
-	chmod a-x $(LIB)/libkraknet.so
+	@echo "Building libkraknet.so..."
+	@$(CC) -c -fPIC -o $(O)/generic.o $(C)/generic.c
+	@$(CC) -shared -o $(LIB)/libkraknet.so $(O)/generic.o -lrt
+	@chmod a-x $(LIB)/libkraknet.so
 
 # base64 asset encoding tool
-$(UTIL)/encoder: $(C)/encoder.c $(C)/base64.h
-	$(CC) -o $(UTIL)/encoder $(C)/encoder.c
+$(BIN)/encoder: $(C)/encoder.c $(C)/base64.h
+	@echo "Building asset encoder..."
+	@$(CC) -o $(BIN)/encoder $(C)/encoder.c
+	@echo "Done!"
 
 
 # quiet space
-$(BIN)/quietspace: $(C)/main.c $(O)/handler.o $(O)/qsfmt.o $(O)/dbpersistence.o $(O)/qsmap.o $(O)/loader.o $(LIB)/libkraknet.so
-	$(CC) -o $(BIN)/quietspace $(C)/main.c $(O)/*.o -lkraknet -lmysqlclient
+$(BIN)/quietspace: $(C)/main.c $(O)/loader.o $(O)/qsmap.o $(O)/qsfmt.o $(O)/dbpersistence.o $(O)/handler.o $(LIB)/libkraknet.so
+	@echo "Building game binary..."
+	@$(CC) -o $(BIN)/quietspace $(C)/main.c $(O)/*.o -lkraknet -lmysqlclient
+	@echo "Done!"
 
 $(O)/dbpersistence.o: $(C)/dbpersistence.c $(C)/dbpersistence.h
-	$(CC) -c $(C)/dbpersistence.c -o $(O)/dbpersistence.o
+	@echo "Building database persistence..."
+	@$(CC) -c $(C)/dbpersistence.c -o $(O)/dbpersistence.o
 
-$(O)/handler.o: $(C)/handler.c $(I)/handler.h $(I)/generic.h $(C)/qsfmt.h $(C)/dbpersistence.h $(C)/qsgame.h $(C)/qsmap.h $(ASSETS)/*
-	$(CC) -c $(C)/handler.c -o $(O)/handler.o
+$(O)/handler.o: $(C)/handler.c $(I)/handler.h $(I)/generic.h $(C)/qsfmt.h $(C)/dbpersistence.h $(C)/qsgame.h $(C)/qsmap.h $(C)/loader.h
+	@echo "Building net connection handler..."
+	@$(CC) -c $(C)/handler.c -o $(O)/handler.o
 
 $(O)/qsfmt.o: $(C)/qsfmt.c $(C)/qsfmt.h
-	$(CC) -c $(C)/qsfmt.c -o $(O)/qsfmt.o
+	@echo "Building text formatting utils..."
+	@$(CC) -c $(C)/qsfmt.c -o $(O)/qsfmt.o
 
 $(O)/qsmap.o: $(C)/qsmap.c $(C)/qsmap.h
-	$(CC) -c $(C)/qsmap.c -o $(O)/qsmap.o
+	@echo "Building map system..."
+	@$(CC) -c $(C)/qsmap.c -o $(O)/qsmap.o
 
-$(O)/loader.o: $(C)/loader.c $(C)/loader.h
-	$(CC) -c $(C)/loader.c -o $(O)/loader.o
+$(O)/loader.o: $(C)/loader.c $(C)/loader.h $(ASSETS)/*
+	@echo "Building asset loader..."
+	@$(CC) -c $(C)/loader.c -o $(O)/loader.o
 
 # directories
 $(O):
-	mkdir $(O)
+	@echo "Create object directory."
+	@mkdir $(O)
 
 $(BIN):
-	mkdir $(BIN)
+	@echo "Create binary directory."
+	@mkdir $(BIN)
 
 $(LIB):
-	mkdir $(LIB)
+	@echo "Create library directory."
+	@mkdir $(LIB)
