@@ -21,11 +21,16 @@ all: $(O) $(BIN) $(LIB) $(LIB)/libkraknet.so $(BIN)/quietspace encoder
 run: all
 	@cd .. && ./init_nanogamo restart
 
+pack: encoder
+	@echo "Packing assets..."
+	@$(UTIL)/pack.sh
+	@echo "Done!"
+
 stop:
 	@cd .. && ./init_nanogamo stop
 
 clean:
-	rm -f $(LIB)/kraknet.so $(O)/*.o $(BIN)/quietspace $(LIB)/libkraknet.so $(UTIL)/encoder
+	rm -f $(LIB)/kraknet.so $(O)/*.o $(BIN)/quietspace $(LIB)/libkraknet.so $(BIN)/encoder
 
 encoder: $(BIN)/encoder
 	@

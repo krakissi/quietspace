@@ -70,6 +70,41 @@ void game_start(FILE *stream, player *pl){
 
 		cursor_position_response(stream);
 		text_type(stream, ": %s", str);
+
+		// FIXME debug
+		if(!strcmp(scene->name, "dorm")){
+			text_type(stream, "\neast: %s", kv_tree_find(kv_tree_find(scene->kv_tree, "exits")->value.kv, "east")->value.str);
+
+			text_type(stream, "\narr: [ ");
+			asset_kv *test_kv = kv_tree_find(scene->kv_tree, "list");
+			if(!test_kv){
+				text_type(stream, "did not find array ");
+			} else if(test_kv->type != AVT_ARR){
+				text_type(stream, "was not array type ");
+			} else {
+				asset_arr *arr = test_kv->value.arr;
+				while(arr){
+					switch(arr->type){
+						case AVT_STRING:
+							text_type(stream, "%s%s ", arr->value.str, (arr->n ? "," : ""));
+							break;
+						case AVT_FLOAT:
+							text_type(stream, "%f%s ", arr->value.f, (arr->n ? "," : ""));
+							break;
+						case AVT_INTEGER:
+							text_type(stream, "%d%s ", arr->value.i, (arr->n ? "," : ""));
+							break;
+
+						default:
+							// nop
+							break;
+					}
+
+					arr = arr->n;
+				}
+			}
+			text_type(stream, "]");
+		}
 	}
 }
 

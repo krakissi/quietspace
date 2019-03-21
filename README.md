@@ -50,7 +50,8 @@ committed to git. You can decode all of the game assets by running
 
 To modify assets, copy the `assets/out/` directory to `assets/from/`
 (e.g. `mkdir assets/from; cp -r assets/out/* assets/from/`). Make your
-changes, then repack the assets with `util/pack.sh`.
+changes, then repack the assets with `util/pack.sh` (or `make pack` in
+`src/`).
 
 Assets are compiled into the game server, so it is necessary to `make`
 after packing new asset changes.

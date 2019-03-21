@@ -14,6 +14,8 @@ char *assets[] = {
 	NULL
 };
 
+void kv_set_value(FILE*, union asset_value*, enum asset_type, char*);
+
 // Match lines that look like comments.
 int rx_comment(char *str){
 	static regex_t *rx = NULL;
@@ -21,6 +23,30 @@ int rx_comment(char *str){
 	if(!rx){
 		rx = malloc(sizeof(regex_t));
 		regcomp(rx, "^\\s*#.*$", REG_NOSUB);
+	}
+
+	return regexec(rx, str, 0, NULL, 0);
+}
+
+// End of a nested k-v map.
+int rx_brace_close(char *str){
+	static regex_t *rx = NULL;
+
+	if(!rx){
+		rx = malloc(sizeof(regex_t));
+		regcomp(rx, "^\\s*}\\s*$", REG_NOSUB);
+	}
+
+	return regexec(rx, str, 0, NULL, 0);
+}
+
+// End of nested array.
+int rx_bracket_close(char *str){
+	static regex_t *rx = NULL;
+
+	if(!rx){
+		rx = malloc(sizeof(regex_t));
+		regcomp(rx, "^\\s*]\\s*$", REG_NOSUB);
 	}
 
 	return regexec(rx, str, 0, NULL, 0);
@@ -46,6 +72,21 @@ int rx_kv(regmatch_t pmatch[], char *str){
 	if(!rx){
 		rx = malloc(sizeof(regex_t));
 		regcomp(rx, "^\\s*\\(.*\\)\\s*=\\s*\\(.*\\)$", 0);
+	}
+
+	int rc = regexec(rx, str, nmatch, pmatch, 0);
+
+	return rc;
+}
+
+// Match lines that look like a value.
+int rx_v(regmatch_t pmatch[], char *str){
+	static regex_t *rx = NULL;
+	size_t nmatch = 2;
+
+	if(!rx){
+		rx = malloc(sizeof(regex_t));
+		regcomp(rx, "^\\s*\\(.*\\)\\s*$", 0);
 	}
 
 	int rc = regexec(rx, str, nmatch, pmatch, 0);
@@ -156,6 +197,173 @@ asset *asset_tree_find(asset *asset_tree, char *name){
 	return asset_tree_find(asset_tree->r, name);
 }
 
+// Figure out the type of the value string.
+int kv_typeof(char *val){
+	switch(*val){
+		case '"':
+			// A literal string object, for descriptions and names.
+			return AVT_STRING;
+
+		case '{':
+			// Nested key-value pairs.
+			return AVT_KV;
+
+		case '[':
+			// Nested array of values.
+			return AVT_ARR;
+	}
+
+	if(!strcmp(val, "scene"))
+		// Scene object, meant to be drawn on screen as graphics.
+		return AVT_SCENE;
+
+	if(!strcmp(val, "overlay"))
+		// Scene overlay, a scene object where spaces are rendered invisible.
+		return AVT_SCENE_OVERLAY;
+
+	if(strchr(val, '.'))
+		// Looks like a floating point number.
+		return AVT_FLOAT;
+
+	// Integer values are the last guess.
+	return AVT_INTEGER;
+}
+
+asset_arr *read_arr(FILE *source){
+	asset_arr *arr, *arr_root = malloc(sizeof(asset_arr));
+	regmatch_t match_arr[2];
+
+	size_t n = 4096;
+	char *s = calloc(n, sizeof(char));
+
+	arr_root->type = AVT_UNSET;
+	arr_root->n = NULL;
+	arr = arr_root;
+
+	while(fgets(s, n, source)){
+		// Don't read comments
+		if(!rx_comment(s) || !rx_space(s))
+			continue;
+
+		// Close bracket means stop parsing.
+		if(!rx_bracket_close(s))
+			break;
+
+		// Read each line, looking for "\s*value\s*
+		if(!rx_v(match_arr, s)){
+			if(arr_root->type == AVT_UNSET){
+				arr = arr_root;
+			} else {
+				arr = arr->n = malloc(sizeof(asset_arr));
+				arr->n = NULL;
+			}
+
+			char *val = get_rx_match_str(s, match_arr[1]);
+
+			arr->type = kv_typeof(val);
+			kv_set_value(source, &(arr->value), arr->type, val);
+
+			free(val);
+		}
+	}
+
+	free(s);
+
+	return arr_root;
+}
+
+asset_kv *read_kv(FILE *source){
+	asset_kv *kv, *kv_tree = malloc(sizeof(asset_kv));
+	regmatch_t match_kv[3];
+
+	size_t n = 4096;
+	char *s = calloc(n, sizeof(char));
+
+	kv_tree->l = kv_tree->r = NULL;
+	kv_tree->key = NULL;
+	while(fgets(s, n, source)){
+		// Don't read comments
+		if(!rx_comment(s) || !rx_space(s))
+			continue;
+
+		// Close brace means stop parsing.
+		if(!rx_brace_close(s))
+			break;
+
+		// Read each line, looking for "\s*key\s*=\s*value
+		if(!rx_kv(match_kv, s)){
+			char *key = get_rx_match_str(s, match_kv[1]);
+			// If kv_tree is NULL, this is the first element we've seen.
+			if(!kv_tree->key){
+				kv = kv_tree;
+				kv->key = key;
+			} else {
+				// Create a new node.
+				kv = malloc(sizeof(asset_kv));
+				kv->l = kv->r = NULL;
+				kv->key = key;
+
+				// Walk the tree and find a place for this key name.
+				kv_tree_add(kv_tree, kv);
+			}
+
+			char *val = get_rx_match_str(s, match_kv[2]);
+
+			kv->type = kv_typeof(val);
+			kv_set_value(source, &(kv->value), kv->type, val);
+
+			free(val);
+		}
+	}
+
+	free(s);
+
+	return kv_tree;
+}
+
+void kv_set_value(FILE *source, union asset_value *value, enum asset_type type, char *val){
+	char *a;
+
+	switch(type){
+		case AVT_STRING:
+			value->str = calloc(strlen(val), sizeof(char));
+			strcpy(value->str, val + 1);
+
+			// Remove a close double-quote if it's present.
+			if((a = strrchr(value->str, '"')))
+				*a = 0;
+			break;
+
+		case AVT_KV:
+			value->kv = read_kv(source);
+			break;
+
+		case AVT_ARR:
+			value->arr = read_arr(source);
+			break;
+
+		case AVT_SCENE:
+		case AVT_SCENE_OVERLAY:
+			value->str = get_scene_str(source);
+			break;
+
+		case AVT_FLOAT:
+			value->f = atof(val);
+			break;
+
+		case AVT_INTEGER:
+			value->i = atoi(val);
+			break;
+
+		case AVT_UNSET:
+			// Shouldn't be used, but we'll zero the value just in case.
+			value->i = 0;
+			break;
+	}
+}
+
+
+// Load all the assets and return a binary tree of them.
 asset *asset_load(){
 	asset *as, *as_tree = malloc(sizeof(asset));
 	asset_kv *kv;
@@ -164,84 +372,21 @@ asset *asset_load(){
 	as_tree->name = NULL;
 	as_tree->l = as_tree->r = NULL;
 
-	size_t n = 4096;
-	char *s = calloc(n, sizeof(char));
-
 	while(*b64){
-		asset_kv *kv_tree = malloc(sizeof(asset_kv));
 		char *gfx = base64_dec(*b64, strlen(*b64));
-
 		FILE *source = fmemopen(gfx, strlen(gfx), "r");
-		regmatch_t match_kv[3];
 
 		if(!source)
 			continue;
 
-		kv_tree->l = kv_tree->r = NULL;
-		kv_tree->key = NULL;
-		while(fgets(s, n, source)){
-			// Don't read comments
-			if(!rx_comment(s) || !rx_space(s))
-				continue;
-
-			// Read each line, looking for "\s*key\s*=\s*value"
-			if(!rx_kv(match_kv, s)){
-				char *key = get_rx_match_str(s, match_kv[1]);
-				// If kv_tree is NULL, this is the first element we've seen.
-				if(!kv_tree->key){
-					kv = kv_tree;
-					kv->key = key;
-				} else {
-					// Create a new node.
-					kv = malloc(sizeof(asset_kv));
-					kv->l = kv->r = NULL;
-					kv->key = key;
-
-					// Walk the tree and find a place for this key name.
-					kv_tree_add(kv_tree, kv);
-				}
-
-				char *val = get_rx_match_str(s, match_kv[2]);
-				char *a;
-
-				if(*val == '"'){
-					// A literal string object, for descriptions and names.
-					kv->type = AVT_STRING;
-
-					kv->value.str = calloc(strlen(val), sizeof(char));
-					strcpy(kv->value.str, val + 1);
-					if((a = strrchr(kv->value.str, '"')))
-						*a = 0;
-				} else if(!strcmp(val, "scene")){
-					// Scene object, meant to be drawn on screen as graphics.
-					kv->type = AVT_SCENE;
-
-					// Parse scene object
-					kv->value.str = get_scene_str(source);
-				} else if(!strcmp(val, "overlay")){
-					// Scene overlay, a scene object where spaces are rendered invisible.
-					kv->type = AVT_SCENE_OVERLAY;
-
-					// Parse scene overlay object
-					kv->value.str = get_scene_str(source);
-				} else if(strchr(val, '.')){
-					// Looks like a floating point number.
-					kv->type = AVT_FLOAT;
-					kv->value.f = atof(val);
-				} else {
-					// Integer values are the last guess.
-					kv->type = AVT_INTEGER;
-					kv->value.i = atoi(val);
-				}
-
-				free(val);
-			}
-		}
+		// Read source as a file and parse key-value pairs.
+		asset_kv *kv_tree = read_kv(source);
 
 		fclose(source);
 		free(gfx);
 		b64++;
 
+		// Add the parsed asset key-value pair to this asset.
 		kv = kv_tree_find(kv_tree, "name");
 		if(!kv)
 			continue;
@@ -261,7 +406,6 @@ asset *asset_load(){
 			asset_tree_add(as_tree, as);
 		}
 	}
-	free(s);
 
 	return as_tree;
 }

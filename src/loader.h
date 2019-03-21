@@ -5,22 +5,37 @@
 #ifndef QS_LOADER_H
 #define QS_LOADER_H
 
+enum asset_type {
+	AVT_UNSET,
+	AVT_INTEGER,
+	AVT_FLOAT,
+	AVT_STRING,
+	AVT_SCENE,
+	AVT_SCENE_OVERLAY,
+	AVT_ARR,
+	AVT_KV
+};
+
+union asset_value {
+	int i;
+	double f;
+	char *str;
+	struct asset_arr *arr;
+	struct asset_kv *kv;
+};
+
+typedef struct asset_arr {
+	enum asset_type type;
+	union asset_value value;
+
+	struct asset_arr *n;
+} asset_arr;
+
 typedef struct asset_kv {
 	char *key;
 
-	enum {
-		AVT_INTEGER,
-		AVT_FLOAT,
-		AVT_STRING,
-		AVT_SCENE,
-		AVT_SCENE_OVERLAY
-	} type;
-
-	union {
-		int i;
-		double f;
-		char *str;
-	} value;
+	enum asset_type type;
+	union asset_value value;
 
 	struct asset_kv *l, *r;
 } asset_kv;
