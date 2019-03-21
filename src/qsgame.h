@@ -44,7 +44,7 @@ void game_start(FILE *stream, player *pl){
 	// Load all assets
 	asset_tree = asset_load();
 
-	asset *scene = asset_tree_find(asset_tree, "lift_doors");
+	asset *scene = asset_tree_find(asset_tree, "dorm");
 
 	draw_scene(stream, scene, "scene_main");
 
@@ -55,23 +55,35 @@ void game_start(FILE *stream, player *pl){
 
 		lower_str(str);
 
-		// FIXME debug
-		if(!strcmp(str, "lift"))
-			scene = asset_tree_find(asset_tree, "lift_doors");
-		else if(!strcmp(str, "dorm"))
-			scene = asset_tree_find(asset_tree, "dorm");
+		// Check to see if the command typed is the name of an exit, and if so, move there.
+		asset_kv *exits_kv = kv_tree_find(scene->kv_tree, "exits");
+		if(exits_kv && (exits_kv->type == AVT_ARR)){
+			asset_arr *exits = exits_kv->value.arr;
+			while(exits){
+				if((exits->type == AVT_STRING) && !strcmp(str, exits->value.str)){
+					scene = asset_tree_find(asset_tree, exits->value.str);
+					break;
+				}
 
+				exits = exits->n;
+			}
+		}
+
+		// Draw the main screen for this scene.
 		draw_scene(stream, scene, "scene_main");
 
+		// FIXME debug
 		if(!strcmp(str, "overlay")){
 			if(!strcmp(scene->name, "dorm"))
 				draw_overlay(stream, scene, "scene_main_overlay");
 		}
 
 		cursor_position_response(stream);
-		text_type(stream, ": %s", str);
 
 		// FIXME debug
+		text_type(stream, ": %s", str);
+
+		/*// FIXME debug
 		if(!strcmp(scene->name, "dorm")){
 			text_type(stream, "\neast: %s", kv_tree_find(kv_tree_find(scene->kv_tree, "exits")->value.kv, "east")->value.str);
 
@@ -104,7 +116,7 @@ void game_start(FILE *stream, player *pl){
 				}
 			}
 			text_type(stream, "]");
-		}
+		}*/
 	}
 }
 
