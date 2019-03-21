@@ -78,7 +78,15 @@ void game_start(FILE *stream, player *pl){
 				draw_overlay(stream, scene, "scene_main_overlay");
 		}
 
+		// Begin text response.
 		cursor_position_response(stream);
+
+		if(!strcmp(str, "look")){
+			asset_kv *look_kv = kv_tree_find(scene->kv_tree, "scene_main_look");
+
+			if(look_kv && (look_kv->type == AVT_STRING))
+				text_type(stream, "%s\r\n", look_kv->value.str);
+		}
 
 		// FIXME debug
 		text_type(stream, ": %s", str);

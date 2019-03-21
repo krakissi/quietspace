@@ -106,7 +106,7 @@ char *get_rx_match_str(char *str, regmatch_t match){
 }
 
 // Load scene data into a buffer.
-char *get_scene_str(FILE *stream){
+char *get_scene_str(FILE *stream, int squash_crlf){
 	size_t n = 4096;
 	char *ret = calloc(n, sizeof(char)), *buf = calloc(n, sizeof(char)), *s;
 	FILE *dest = fmemopen(ret, n, "w");
@@ -121,7 +121,7 @@ char *get_scene_str(FILE *stream){
 			break;
 
 		// Write the line out with internet standard cr-lf.
-		fprintf(dest, "%s\r\n", buf);
+		fprintf(dest, "%s%s", buf, (squash_crlf ? " " : "\r\n"));
 	}
 
 	fclose(dest);
@@ -213,6 +213,10 @@ int kv_typeof(char *val){
 			return AVT_ARR;
 	}
 
+	if(!strcmp(val, "block"))
+		// A string of text, but formatted in a block which is terminated by a period on its own line.
+		return AVT_STRING_BLOCK;
+
 	if(!strcmp(val, "scene"))
 		// Scene object, meant to be drawn on screen as graphics.
 		return AVT_SCENE;
@@ -263,6 +267,9 @@ asset_arr *read_arr(FILE *source){
 			arr->type = kv_typeof(val);
 			kv_set_value(source, &(arr->value), arr->type, val);
 
+			if(arr->type == AVT_STRING_BLOCK)
+				arr->type = AVT_STRING;
+
 			free(val);
 		}
 	}
@@ -312,6 +319,9 @@ asset_kv *read_kv(FILE *source){
 			kv->type = kv_typeof(val);
 			kv_set_value(source, &(kv->value), kv->type, val);
 
+			if(kv->type == AVT_STRING_BLOCK)
+				kv->type = AVT_STRING;
+
 			free(val);
 		}
 	}
@@ -342,9 +352,13 @@ void kv_set_value(FILE *source, union asset_value *value, enum asset_type type, 
 			value->arr = read_arr(source);
 			break;
 
+		case AVT_STRING_BLOCK:
+			value->str = get_scene_str(source, 1);
+			break;
+
 		case AVT_SCENE:
 		case AVT_SCENE_OVERLAY:
-			value->str = get_scene_str(source);
+			value->str = get_scene_str(source, 0);
 			break;
 
 		case AVT_FLOAT:
