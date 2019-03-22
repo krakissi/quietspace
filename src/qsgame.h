@@ -86,10 +86,10 @@ void game_start(FILE *stream, player *pl){
 
 			if(look_kv && (look_kv->type == AVT_STRING))
 				text_type(stream, "%s\r\n", look_kv->value.str);
+		} else {
+			// FIXME debug
+			text_type(stream, ": %s", str);
 		}
-
-		// FIXME debug
-		text_type(stream, ": %s", str);
 
 		/*// FIXME debug
 		if(!strcmp(scene->name, "dorm")){
