@@ -51,8 +51,13 @@ void draw_overlay(FILE *stream, asset *as, char *key){
 	}
 }
 
+void set_scene_name(char *scene_name, asset *scene){
+	strcpy(scene_name, kv_tree_find(kv_tree_find(scene->kv_tree, "scenes")->value.kv, "start")->value.str);
+}
+
 // Entry point for the actual game, once a player is logged in.
 void game_start(FILE *stream, player *pl){
+	char scene_name[256] = "";
 	char *str = NULL;
 	ssize_t rd;
 	size_t n;
@@ -62,7 +67,8 @@ void game_start(FILE *stream, player *pl){
 
 	asset *scene = asset_tree_find(asset_tree, "dorm");
 
-	draw_scene(stream, scene, "main");
+	set_scene_name(scene_name, scene);
+	draw_scene(stream, scene, scene_name);
 
 	while((rd = read_cmd(&str, &n, stream, "", "$", "")) != -1){
 		// Exit immediately.
@@ -78,6 +84,7 @@ void game_start(FILE *stream, player *pl){
 			while(exits){
 				if((exits->type == AVT_STRING) && !strcmp(str, exits->value.str)){
 					scene = asset_tree_find(asset_tree, exits->value.str);
+					set_scene_name(scene_name, scene);
 					break;
 				}
 
@@ -86,12 +93,12 @@ void game_start(FILE *stream, player *pl){
 		}
 
 		// Draw the main screen for this scene.
-		draw_scene(stream, scene, "main");
+		draw_scene(stream, scene, scene_name);
 
 		// FIXME debug
 		if(!strcmp(str, "overlay")){
 			if(!strcmp(scene->name, "dorm"))
-				draw_overlay(stream, scene, "main");
+				draw_overlay(stream, scene, scene_name);
 		}
 
 		// Begin text response.
@@ -101,7 +108,7 @@ void game_start(FILE *stream, player *pl){
 			asset_kv *look_kv = kv_tree_find(scene->kv_tree, "scenes");
 
 			if(look_kv && (look_kv->type == AVT_KV)){
-				look_kv = kv_tree_find(look_kv->value.kv, "main");
+				look_kv = kv_tree_find(look_kv->value.kv, scene_name);
 
 				if(look_kv && (look_kv->type == AVT_KV)){
 					look_kv = kv_tree_find(look_kv->value.kv, "look");
