@@ -64,6 +64,18 @@ int rx_space(char *str){
 	return regexec(rx, str, 0, NULL, 0);
 }
 
+// Match lines which are just optional white-space surrounding a period.
+int rx_dotlimiter(char *str){
+	static regex_t *rx = NULL;
+
+	if(!rx){
+		rx = malloc(sizeof(regex_t));
+		regcomp(rx, "^\\s*[.]\\s*$", REG_NOSUB);
+	}
+
+	return regexec(rx, str, 0, NULL, 0);
+}
+
 // Match lines that look like key = value.
 int rx_kv(regmatch_t pmatch[], char *str){
 	static regex_t *rx = NULL;
@@ -117,7 +129,7 @@ char *get_scene_str(FILE *stream, int squash_crlf){
 			*s = 0;
 
 		// End of the scene when a dot is alone on a line.
-		if(!strcmp(buf, "."))
+		if(!rx_dotlimiter(buf))
 			break;
 
 		// Write the line out with internet standard cr-lf.

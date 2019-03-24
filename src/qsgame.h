@@ -3,34 +3,50 @@
 asset *asset_tree;
 
 void draw_scene(FILE *stream, asset *as, char *key){
-	asset_kv *kv = kv_tree_find(as->kv_tree, key);
+	asset_kv *kv = kv_tree_find(as->kv_tree, "scenes");
 
-	fprintf(stream,
-		"\033[2J\033c" /* Reset and clear display */
-	);
+	if(kv && (kv->type == AVT_KV)){
+		kv = kv_tree_find(kv->value.kv, key);
 
-	if(kv && ((kv->type == AVT_SCENE) || (kv->type == AVT_SCENE_OVERLAY)))
-		fprintf(stream, "\033[0;0H%s", kv->value.str);
-	else
-		fprintf(stream, "failed to find kv!!");
+		if(kv && (kv->type = AVT_KV)){
+			kv = kv_tree_find(kv->value.kv, "base");
+
+			fprintf(stream,
+				"\033[2J\033c" /* Reset and clear display */
+			);
+
+			if(kv && ((kv->type == AVT_SCENE) || (kv->type == AVT_SCENE_OVERLAY)))
+				fprintf(stream, "\033[0;0H%s", kv->value.str);
+			else
+				fprintf(stream, "failed to find kv!!");
+		}
+	}
 
 	draw_borders(stream, 0, 1, 80, 15);
 }
 
 void draw_overlay(FILE *stream, asset *as, char *key){
-	asset_kv *kv = kv_tree_find(as->kv_tree, key);
+	asset_kv *kv = kv_tree_find(as->kv_tree, "scenes");
 
-	if(kv && ((kv->type == AVT_SCENE_OVERLAY) || (kv->type == AVT_SCENE))){
-		char *graphics = kv->value.str;
+	if(kv && (kv->type == AVT_KV)){
+		kv = kv_tree_find(kv->value.kv, key);
 
-		fputs("\033[0;0H", stream);
-		while(*graphics){
-			if(*graphics == ' ')
-				fputs("\033[C", stream);
-			else
-				fputc(*graphics, stream);
+		if(kv && (kv->type == AVT_KV)){
+			kv = kv_tree_find(kv->value.kv, "base");
 
-			graphics++;
+			if(kv && ((kv->type == AVT_SCENE_OVERLAY) || (kv->type == AVT_SCENE))){
+				char *graphics = kv->value.str;
+
+				fputs("\033[0;0H", stream);
+				while(*graphics){
+					if(*graphics == ' ')
+						fputs("\033[C", stream);
+					else
+						fputc(*graphics, stream);
+
+					graphics++;
+				}
+			}
 		}
 	}
 }
@@ -46,7 +62,7 @@ void game_start(FILE *stream, player *pl){
 
 	asset *scene = asset_tree_find(asset_tree, "dorm");
 
-	draw_scene(stream, scene, "scene_main");
+	draw_scene(stream, scene, "main");
 
 	while((rd = read_cmd(&str, &n, stream, "", "$", "")) != -1){
 		// Exit immediately.
@@ -70,22 +86,30 @@ void game_start(FILE *stream, player *pl){
 		}
 
 		// Draw the main screen for this scene.
-		draw_scene(stream, scene, "scene_main");
+		draw_scene(stream, scene, "main");
 
 		// FIXME debug
 		if(!strcmp(str, "overlay")){
 			if(!strcmp(scene->name, "dorm"))
-				draw_overlay(stream, scene, "scene_main_overlay");
+				draw_overlay(stream, scene, "main");
 		}
 
 		// Begin text response.
 		cursor_position_response(stream);
 
 		if(!strcmp(str, "look")){
-			asset_kv *look_kv = kv_tree_find(scene->kv_tree, "scene_main_look");
+			asset_kv *look_kv = kv_tree_find(scene->kv_tree, "scenes");
 
-			if(look_kv && (look_kv->type == AVT_STRING))
-				text_type(stream, "%s\r\n", look_kv->value.str);
+			if(look_kv && (look_kv->type == AVT_KV)){
+				look_kv = kv_tree_find(look_kv->value.kv, "main");
+
+				if(look_kv && (look_kv->type == AVT_KV)){
+					look_kv = kv_tree_find(look_kv->value.kv, "look");
+
+					if(look_kv && (look_kv->type == AVT_STRING))
+						text_type(stream, "%s\r\n", look_kv->value.str);
+				}
+			}
 		} else {
 			// FIXME debug
 			text_type(stream, ": %s", str);
