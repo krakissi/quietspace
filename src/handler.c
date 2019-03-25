@@ -34,9 +34,16 @@ int handle_connection(FILE *request_stream, struct sockaddr_in socket_addr_clien
 
 		fprintf(
 			request_stream,
-			/* "Elite" font */
+			/* Having this will cause the game to render in web browsers. It'll be real ugly. */
+			"HTTP/1.1 200 OK\r\nConnection: close\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n"
+			"What are you doing you GOOF?\r\n"
+			"Connect to via telnet (PuTTY for Windows/Mac, netcat or similar client for Linux) to krakissi.net port 10421.\r\n\r\n"
+			"The game can't be played from here.\r\n\r\n"
+
 			"\033[2J\033c" /* Reset and clear display */
-			"\r\n\033[0;31m" /* RED */
+
+			/* "Elite" font */
+			"\033[0;31m\r\n" /* RED */
 			"                                            .▄▄▄  ▄• ▄▌▪  ▄▄▄ .▄▄▄▄▄       \r\n"
 			"                                            ▐▀•▀█ █▪██▌██ ▀▄.▀·•██         \r\n"
 			"                                            █▌·.█▌█▌▐█▌▐█·▐▀▀▪▄ ▐█.▪       \r\n"
