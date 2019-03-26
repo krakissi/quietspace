@@ -76,8 +76,7 @@ the standard telnet port (or any other port), you could configure
 iptables routing:
 
 ```
-	iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 23 -j REDIRECT
---to-port 10421
+	iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 23 -j REDIRECT --to-port 10421
 ```
 
 This requires root access to the linux system where you are running the
