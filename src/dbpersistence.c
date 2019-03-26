@@ -8,17 +8,25 @@
 
 #include "dbpersistence.h"
 
-#define PLAYER_INSERT_SQL_START "INSERT INTO players(name,nick,pass) VALUES ("
+#define PLAYER_INSERT_SQL_START "INSERT INTO players(name, nick, pass) VALUES ("
 #define PLAYER_INSERT_SQL_END ")"
 
-#define PLAYER_REPLACE_SQL_START "REPLACE INTO players(name,nick,pass,pos_level,pos_id) VALUES ("
+#define PLAYER_REPLACE_SQL_START "REPLACE INTO players(name, nick, pass, pos_level, pos_id) VALUES ("
 #define PLAYER_REPLACE_SQL_END ")"
+
+#define PLAYER_KV_REPLACE_SQL_START "REPLACE INTO players_kv(id_player, name, value) VALUES ("
+#define PLAYER_KV_REPLACE_SQL_END ")"
 
 #define PLAYER_SELECT_SQL_START "SELECT id_player, name, nick, created, pass, pos_level, pos_id FROM players WHERE "
 #define PLAYER_SELECT_SQL_ID "id_player = "
 #define PLAYER_SELECT_SQL_NAME "name = "
 
+#define PLAYER_KV_SELECT_SQL_START "SELECT id_player, name, value FROM players_kv WHERE "
+#define PLAYER_KV_SELECT_SQL_ID "id_player = "
+#define PLAYER_KV_SELECT_SQL_NAME "name = "
+
 #define SQL_FUDGE 3
+#define SQL_AND " AND "
 
 // Get a database connection handle. Must be closed with mysql_close().
 MYSQL *get_conn(){
@@ -50,6 +58,7 @@ void debug_print_character(FILE *stream, player *pl){
 		pl->pos_id
 	);
 }
+
 
 // Create a new player record. Fails on constraint violation (duplicate name, etc.)
 unsigned long player_create(player *pl){
@@ -129,13 +138,15 @@ out:
 }
 
 // Load a player, either by name or id_player (if id_player > 0). If pl is NULL this allocates memory.
-player *player_load(unsigned long id_player, const char name[9], player *pl){
+player *player_load(unsigned long id_player, const char name[QS_LEN_NAME], player *pl){
 	char *query = NULL;
+	MYSQL_RES *result = NULL;
 	MYSQL *mysql = get_conn();
 	if(!mysql)
 		goto out;
 
 	size_t len = strlen(PLAYER_SELECT_SQL_START);
+
 	if(id_player)
 		len += strlen(PLAYER_SELECT_SQL_ID) + 20;
 	else
@@ -148,7 +159,7 @@ player *player_load(unsigned long id_player, const char name[9], player *pl){
 		sprintf(query, PLAYER_SELECT_SQL_START PLAYER_SELECT_SQL_NAME "'%s'", name);
 
 	if(!mysql_real_query(mysql, query, strlen(query))){
-		MYSQL_RES *result = mysql_use_result(mysql);
+		result = mysql_use_result(mysql);
 		if(!result)
 			goto out;
 
@@ -171,12 +182,95 @@ player *player_load(unsigned long id_player, const char name[9], player *pl){
 
 		pl->pos_level = atoi(row[5]);
 		strcpy(pl->pos_id, row[6]);
-
-		mysql_free_result(result);
 	}
+
+out:
+	if(result)
+		mysql_free_result(result);
+
+	mysql_close(mysql);
+	free(query);
+	return pl;
+}
+
+// Save a player key-value pair. This will overwrite an existing record if one exists for this player and key name.
+void player_kv_persist(player_kv *kv){
+	char *query = NULL;
+
+	MYSQL *mysql = get_conn();
+	if(!mysql)
+		goto out;
+
+	query = calloc(
+		(
+			strlen(PLAYER_KV_REPLACE_SQL_START) +
+			20 + SQL_FUDGE + // id_player
+			QS_LEN_KV_NAME + SQL_FUDGE + // key
+			QS_LEN_KV_VALUE + SQL_FUDGE + // value
+			strlen(PLAYER_KV_REPLACE_SQL_END)
+		),
+		sizeof(char)
+	);
+	sprintf(
+		query,
+		PLAYER_KV_REPLACE_SQL_START "%ld, '%s', '%s'" PLAYER_KV_REPLACE_SQL_END,
+		kv->id_player,
+		kv->key,
+		kv->value
+	);
+
+	// Persist and hope for the best.
+	mysql_real_query(mysql, query, strlen(query));
 
 out:
 	mysql_close(mysql);
 	free(query);
-	return pl;
+}
+
+// Load a key-value pair for a player. If kv is NULL this allocates memory.
+player_kv *player_kv_load(unsigned long id_player, const char key[QS_LEN_KV_NAME], player_kv *kv){
+	char *query = NULL;
+	MYSQL_RES *result = NULL;
+	MYSQL *mysql = get_conn();
+	if(!mysql)
+		goto out;
+
+	size_t len = strlen(PLAYER_KV_SELECT_SQL_START);
+
+	len += strlen(PLAYER_KV_SELECT_SQL_ID) + 20 + strlen(PLAYER_KV_SELECT_SQL_NAME) + QS_LEN_KV_NAME + SQL_FUDGE;
+	query = calloc(len, sizeof(char));
+	sprintf(query, PLAYER_KV_SELECT_SQL_START PLAYER_KV_SELECT_SQL_ID "%ld" SQL_AND PLAYER_KV_SELECT_SQL_NAME "'%s'", id_player, key);
+
+	if(!mysql_real_query(mysql, query, strlen(query))){
+		result = mysql_use_result(mysql);
+		if(!result)
+			goto out;
+
+		MYSQL_ROW row = mysql_fetch_row(result);
+		if(!row){
+			kv = NULL;
+			goto out;
+		}
+
+		// Allocate memory for the player object if it wasn't provided.
+		if(!kv)
+			kv = malloc(sizeof(player_kv));
+
+		kv->id_player = atol(row[0]);
+		strcpy(kv->key, row[1]);
+
+		// Copy if value is present, otherwise clear the string.
+		if(row[2])
+			strcpy(kv->value, row[2]);
+		else
+			memcpy(kv->value, "\0\1\0", 3);
+	}
+
+out:
+	if(result)
+		mysql_free_result(result);
+
+	mysql_close(mysql);
+	free(query);
+	return kv;
 }

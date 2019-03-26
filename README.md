@@ -24,6 +24,17 @@ Create the tables:
 		created timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
 		pass varchar(64) NOT NULL
 	);
+
+	CREATE TABLE players_kv (
+		id_player int(11) NOT NULL,
+		name varchar(64) NOT NULL,
+		value varchar(2048),
+
+		CONSTRAINT id_name_unique UNIQUE (id_player, name),
+		FOREIGN KEY (id_player)
+			REFERENCES players(id_player)
+			ON DELETE CASCADE
+	);
 ```
 
 
@@ -55,3 +66,19 @@ changes, then repack the assets with `util/pack.sh` (or `make pack` in
 
 Assets are compiled into the game server, so it is necessary to `make`
 after packing new asset changes.
+
+
+Networking
+----------
+
+By default the game will run on port 10421. If you want to connect via
+the standard telnet port (or any other port), you could configure
+iptables routing:
+
+```
+	iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 23 -j REDIRECT
+--to-port 10421
+```
+
+This requires root access to the linux system where you are running the
+server.
