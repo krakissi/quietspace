@@ -18,11 +18,13 @@ Create the tables:
 
 ```
 	CREATE TABLE players (
-		id_player int(11) NOT NULL PRIMARY KEY,
+		id_player int(11) NOT NULL AUTO_INCREMENT,
 		name varchar(8) UNIQUE NOT NULL,
 		nick varchar(8) DEFAULT NULL,
 		created timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-		pass varchar(64) NOT NULL
+		pass varchar(64) NOT NULL,
+
+		PRIMARY KEY(id_player)
 	);
 
 	CREATE TABLE players_kv (
