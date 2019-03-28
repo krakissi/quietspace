@@ -52,7 +52,7 @@ void draw_overlay(FILE *stream, asset *as, char *key){
 }
 
 void set_scene_name(char *scene_name, asset *scene){
-	strcpy(scene_name, kv_tree_find(kv_tree_find(scene->kv_tree, "scenes")->value.kv, "start")->value.str);
+	strcpy(scene_name, kv_tree_find_path(scene->kv_tree, "scenes.start")->value.str);
 }
 
 void save_last_cmd(player *pl, char *cmd){

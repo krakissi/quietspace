@@ -43,6 +43,7 @@ typedef struct asset_kv {
 
 extern asset_kv *kv_tree_add(asset_kv *kv_tree, asset_kv *kv);
 extern asset_kv *kv_tree_find(asset_kv *kv_tree, char *key);
+extern asset_kv *kv_tree_find_path(asset_kv *kv_tree, char *path);
 
 typedef struct asset {
 	char *name;

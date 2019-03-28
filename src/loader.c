@@ -175,6 +175,32 @@ asset_kv *kv_tree_find(asset_kv *kv_tree, char *key){
 	return kv_tree_find(kv_tree->r, key);
 }
 
+// Take a period-separated path and walk down KV trees until we get there.
+asset_kv *kv_tree_find_path(asset_kv *kv, char *path){
+	if(!kv || !path)
+		return NULL;
+
+	char *key = calloc(strlen(path) + 1, sizeof(char));
+	char *b;
+
+	while(kv && (kv->l || kv->r)){
+		if((b = strchr(path, '.')))
+			*(strncpy(key, path, b - path) + (b - path)) = 0;
+		else
+			strcpy(key, path);
+
+		kv = kv_tree_find(kv, key);
+
+		if(b && kv && (kv->type == AVT_KV)){
+			kv = kv->value.kv;
+			path = b + 1;
+		} else break;
+	}
+
+	free(key);
+	return kv;
+}
+
 // Add the asset to the asset_tree in the next open space.
 asset *asset_tree_add(asset *asset_tree, asset *asset){
 	// Walk the tree and find a place for this name.
@@ -300,6 +326,7 @@ asset_kv *read_kv(FILE *source){
 
 	kv_tree->l = kv_tree->r = NULL;
 	kv_tree->key = NULL;
+
 	while(fgets(s, n, source)){
 		// Don't read comments
 		if(!rx_comment(s) || !rx_space(s))
@@ -312,6 +339,7 @@ asset_kv *read_kv(FILE *source){
 		// Read each line, looking for "\s*key\s*=\s*value
 		if(!rx_kv(match_kv, s)){
 			char *key = get_rx_match_str(s, match_kv[1]);
+
 			// If kv_tree is NULL, this is the first element we've seen.
 			if(!kv_tree->key){
 				kv = kv_tree;
