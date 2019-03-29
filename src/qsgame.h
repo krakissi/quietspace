@@ -32,7 +32,7 @@ void draw_overlay(FILE *stream, asset *as, char *key){
 		kv = kv_tree_find(kv->value.kv, key);
 
 		if(kv && (kv->type == AVT_KV)){
-			kv = kv_tree_find(kv->value.kv, "base");
+			kv = kv_tree_find(kv->value.kv, "help");
 
 			if(kv && ((kv->type == AVT_SCENE_OVERLAY) || (kv->type == AVT_SCENE))){
 				char *graphics = kv->value.str;
@@ -109,11 +109,8 @@ void game_start(FILE *stream, player *pl){
 		// Draw the main screen for this scene.
 		draw_scene(stream, scene, scene_name);
 
-		// FIXME debug
-		if(!strcmp(str, "overlay")){
-			if(!strcmp(scene->name, "dorm"))
-				draw_overlay(stream, scene, scene_name);
-		}
+		if(!strcmp(str, "what"))
+			draw_overlay(stream, scene, scene_name);
 
 		// Begin text response.
 		cursor_position_response(stream);
@@ -141,6 +138,31 @@ void game_start(FILE *stream, player *pl){
 				free(kv);
 			} else {
 				text_type(stream, "nothing appropriate");
+			}
+		} else if(!strcmp(str, "scene_info")){
+			// FIXME debug - show scene info
+			text_type(stream, "scene_name: %s\n", scene_name);
+
+			text_type(stream, "help: ");
+			asset_kv *kv = kv_tree_find(scene->kv_tree, "scenes");
+			if(kv && (kv->type == AVT_KV)){
+				kv = kv_tree_find(kv->value.kv, scene_name);
+
+				if(kv && (kv->type == AVT_KV)){
+					kv = kv_tree_find(kv->value.kv, "help");
+
+					if(!kv)
+						text_type(stream, "no \"help\" node\n");
+					else {
+						text_type(stream, "type %d (is overlay: %s)\n", kv->type, ((kv->type == AVT_SCENE_OVERLAY) ? "yes" : "no"));
+
+						draw_overlay(stream, scene, scene_name);
+					}
+				} else {
+					text_type(stream, "no \"%s\" node\n", scene_name);
+				}
+			} else {
+				text_type(stream, "no \"scenes\" node\n");
 			}
 		} else {
 			// FIXME debug
