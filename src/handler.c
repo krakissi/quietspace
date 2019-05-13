@@ -64,7 +64,7 @@ int handle_connection(FILE *request_stream, struct sockaddr_in socket_addr_clien
 		draw_borders(request_stream, 0, 1, 80, 15);
 
 		// Go interactive.
-		while((rd = read_cmd(&str, &n, request_stream, "", "$", "")) != -1){
+		while((rd = read_cmd(&str, &n, request_stream, "/", "$", "")) != -1){
 			// Exit immediately.
 			if(!strcmp(str, CMD_QUIT) || !strcmp(str, CMD_QUIT_ALT1))
 				break;

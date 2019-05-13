@@ -124,7 +124,7 @@ ssize_t read_cmd(char **str_p, size_t *n_p, FILE *stream, const char *ps, const 
 
 prompt:
 		// Print out the prompt and await a command.
-		fprintf(stream, "\033[23H\033[J\033[0m/%s %s%s ", ps, ps_perm, ps_col);
+		fprintf(stream, "\033[23H\033[J\033[0m%s%s%s%s ", ps, ((ps && strlen(ps)) ? " " : ""), ps_perm, ps_col);
 	}
 
 	return rd;

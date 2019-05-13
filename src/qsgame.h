@@ -84,7 +84,7 @@ void game_start(FILE *stream, player *pl){
 	set_scene_name(scene_name, scene);
 	draw_scene(stream, scene, scene_name);
 
-	while((rd = read_cmd(&str, &n, stream, "", "$", "")) != -1){
+	while((rd = read_cmd(&str, &n, stream, "", ">", "")) != -1){
 		// Exit immediately.
 		if(!strcmp(str, CMD_QUIT) || !strcmp(str, CMD_QUIT_ALT1))
 			break;
@@ -189,7 +189,7 @@ player *game_login(FILE *stream){
 	regcomp(&regex_pass, REG_PASS, 0);
 
 	*ps_col = 0;
-	strcpy(ps, "login");
+	strcpy(ps, "/login");
 
 	// Request player username
 	if(read_cmd_bounded(
@@ -269,7 +269,7 @@ player *game_join(FILE *stream){
 	regcomp(&regex_pass, REG_PASS, 0);
 
 	*ps_col = 0;
-	strcpy(ps, "join");
+	strcpy(ps, "/join");
 
 	// Ask the player for a name.
 	if(read_cmd_bounded(
