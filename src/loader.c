@@ -11,6 +11,8 @@ char *assets[] = {
 	,
 	#include "assets_enc/scene_lift_doors"
 	,
+	#include "assets_enc/scene_train"
+	,
 	NULL
 };
 
